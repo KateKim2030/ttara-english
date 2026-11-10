@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17130f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="따라말하기">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>html, body { margin: 0; }</style>
+<script>if ("serviceWorker" in navigator) addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));</script>
+</head>
+<body>
+<title>따라말하기 영어</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Jua&family=IBM+Plex+Sans+KR:wght@500&family=JetBrains+Mono:wght@700&display=swap">
+<style>
+/* One look on purpose: a printed sticker book. Tilted comic stage on top, words in the middle, chunky keys in thumb reach. */
+:root {
+  --paper: #ece6dc; --dots: rgba(23, 19, 15, .13); --ink: #17130f; --soft: #5d5346; --dim: #aba192;
+  --white: #fffdf7; --yellow: #ffce3a; --pink: #ff5c8a; --pine: #1e6a4c;
+  --en: "Bricolage Grotesque", "Segoe UI", Roboto, sans-serif;
+  --fun: "Jua", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --ko: "IBM Plex Sans KR", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --mono: "JetBrains Mono", Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* .view and .script set display, which would otherwise beat the hidden attribute. */
+html, body { height: 100%; }
+body {
+  color: var(--ink); font-family: var(--ko); transition: background-color .25s;
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--dots) 1.3px, transparent 1.6px);
+  background-size: 20px 20px;
+}
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+
+.app {
+  height: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
+  padding-block: 10px 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode, .cat, .ctl, .opt {
+  border: 3px solid var(--ink); background: var(--white); font-family: var(--fun);
+  box-shadow: 3px 3px 0 var(--ink); transition: transform .08s, box-shadow .08s;
+}
+.mode:active, .cat:active, .ctl:active, .opt:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.mode { min-height: 44px; border-radius: 12px; font-size: 18px; }
+.mode[aria-pressed="true"] { background: var(--ink); color: var(--white); }
+.view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+.cats { display: flex; gap: 6px; }
+.cat { flex: 1 1 0; min-width: 0; min-height: 38px; padding: 0 2px; border-width: 2px; border-radius: 10px; box-shadow: 2px 2px 0 var(--ink); font-size: 15px; white-space: nowrap; }
+.cat[aria-pressed="true"] { background: var(--yellow); }
+
+.stage { position: relative; flex: none; align-self: center; width: min(calc(100% - 10px), 54dvh); aspect-ratio: 400 / 190; margin: 6px 6px 16px 4px; transform: rotate(-1.3deg); transition: width .3s; }
+.stage.compact { align-self: flex-start; width: min(46%, 26dvh); margin-bottom: 4px; }
+.stage.compact .count, .stage.compact .tag, .stage.compact .sticker { display: none; }
+.art { position: absolute; inset: 0; overflow: hidden; border: 4px solid var(--ink); border-radius: 18px; box-shadow: 7px 7px 0 var(--ink); background: var(--white); }
+.art svg { display: block; width: 100%; height: 100%; }
+.sticker {
+  position: absolute; top: -9px; left: -3px; padding: 4px 11px; border: 3px solid var(--ink); border-radius: 9px;
+  background: var(--pink); font-family: var(--fun); font-size: 17px; transform: rotate(-4deg); box-shadow: 3px 3px 0 var(--ink);
+  animation: pop .26s cubic-bezier(.3, 1.7, .5, 1);
+}
+.stage[data-phase="turn"] .sticker { background: var(--yellow); }
+.count { position: absolute; bottom: -10px; right: 14px; padding: 3px 8px; border-radius: 6px; background: var(--ink); color: var(--white); font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.tag { position: absolute; left: 12px; bottom: -13px; padding: 3px 11px; border: 3px solid var(--ink); border-radius: 7px; background: var(--white); font-family: var(--fun); font-size: 16px; transform: rotate(1.6deg); box-shadow: 3px 3px 0 var(--ink); }
+
+.waves path { fill: none; stroke: var(--white); stroke-width: 5; stroke-linecap: round; opacity: .25; }
+.stage[data-phase="listen"] .waves path { animation: wave 1s infinite; }
+.stage[data-phase="listen"] .waves path:nth-child(2) { animation-delay: .14s; }
+.stage[data-phase="listen"] .waves path:nth-child(3) { animation-delay: .28s; }
+.stage[data-phase="turn"] .bob { animation: bob .55s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+.flame { animation: flick .5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+.twinkle { animation: tw 1.6s ease-in-out infinite alternate; }
+.head { animation: slide 3.4s linear infinite; }
+@keyframes wave { 0%, 100% { opacity: .25; } 45% { opacity: 1; } }
+@keyframes bob { to { transform: translateY(-5px) rotate(1.5deg); } }
+@keyframes flick { to { transform: scaleY(1.2) scaleX(.9); } }
+@keyframes tw { to { opacity: .25; } }
+@keyframes slide { from { transform: translateX(0); } to { transform: translateX(150px); } }
+@keyframes pop { from { transform: rotate(-4deg) scale(.5); } }
+
+.card { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.text { margin-block: auto; display: flex; flex-direction: column; gap: 6px; }
+.en { margin: 0; font-family: var(--en); font-weight: 800; font-size: clamp(27px, 7.8vw, 40px); line-height: 1.18; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.w { border-radius: 6px; transition: color .08s; }
+.w.todo { color: var(--dim); }
+.w.cur { background: var(--yellow); box-shadow: 0 0 0 3px var(--yellow); }
+.ko { margin: 0; color: var(--soft); font-size: 17px; line-height: 1.45; }
+.ko.veiled { filter: blur(8px); user-select: none; }
+.cue-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cue-text { margin: 0; font-family: var(--fun); font-size: 18px; color: var(--pine); }
+.cue-text.speak { color: var(--ink); }
+.reps { display: flex; gap: 6px; flex: none; }
+.rep { width: 15px; height: 15px; border-radius: 50%; border: 3px solid var(--ink); background: var(--white); }
+.rep.on { background: var(--pink); }
+.track { flex: none; height: 12px; border: 3px solid var(--ink); border-radius: 7px; background: var(--white); overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--yellow); }
+.err { margin: 0; color: #a3210f; font-size: 14px; line-height: 1.45; }
+
+.foot { flex: none; display: flex; flex-direction: column; gap: 9px; }
+.play-row { display: grid; grid-template-columns: 1fr 1.7fr 1fr; gap: 9px; }
+.ctl { min-height: 62px; border-radius: 15px; font-size: 19px; box-shadow: 4px 4px 0 var(--ink); }
+.main { background: var(--yellow); font-size: 25px; }
+.main[aria-pressed="true"] { background: var(--pink); }
+.opt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.opt { min-height: 42px; border-width: 2px; border-radius: 10px; box-shadow: 2px 2px 0 var(--ink); font-size: 15px; }
+.note { margin: 0; color: var(--soft); font-size: 12px; text-align: center; }
+
+.ltitle { margin: 0; font-family: var(--en); font-size: 23px; line-height: 1.15; }
+.q { margin: 0; font-family: var(--fun); font-size: 19px; line-height: 1.4; }
+.wait { margin: auto 0; text-align: center; color: var(--soft); font-size: 16px; line-height: 1.6; }
+.script { display: flex; flex-direction: column; gap: 2px; }
+.line { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 9px; background: transparent; text-align: left; }
+.line-en { display: block; font-family: var(--en); font-size: 19px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.line-ko { display: block; margin-top: 2px; font-size: 14px; line-height: 1.4; color: var(--soft); }
+.line.now { background: var(--yellow); }
+.line.now .line-ko { color: var(--ink); }
+.ans { margin: 0; color: var(--pine); font-family: var(--fun); font-size: 17px; }
+/* Short screens: the sentence outranks the picture. */
+@media (max-height: 680px) {
+  .app, .view { gap: 7px; }
+  .stage { width: min(calc(100% - 10px), 38dvh); margin-bottom: 14px; }
+  .stage.compact, .note { display: none; }
+  .en { font-size: clamp(23px, 6.6vw, 30px); }
+  .ctl { min-height: 52px; }
+  .opt { min-height: 38px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .waves path { opacity: .8; } }
+</style>
+
+<main class="app">
+  <div class="modes" role="group" aria-label="연습 종류">
+    <button class="mode" id="modeRepeat" type="button">따라 말하기</button>
+    <button class="mode" id="modeListen" type="button">듣기</button>
+  </div>
+
+  <div class="view" id="repeatView">
+    <div class="cats" id="cats" role="group" aria-label="문장 종류"></div>
+    <div class="stage" id="stage" data-phase="idle">
+      <div class="art" id="scene" aria-hidden="true"></div>
+      <span class="sticker" id="sticker" hidden></span>
+      <span class="count" id="count"></span>
+      <span class="tag" id="tag"></span>
+    </div>
+    <section class="card">
+      <div class="text">
+        <p class="en" id="en" lang="en"></p>
+        <p class="ko" id="ko"></p>
+      </div>
+      <p class="err" id="err" hidden></p>
+    </section>
+    <div class="cue-row">
+      <p class="cue-text" id="cue" aria-live="polite"></p>
+      <span class="reps" id="reps" aria-label="반복 횟수"></span>
+    </div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <div class="foot">
+      <div class="play-row">
+        <button class="ctl" id="prev" type="button">이전</button>
+        <button class="ctl main" id="play" type="button" aria-pressed="false">시작</button>
+        <button class="ctl" id="next" type="button">다음</button>
+      </div>
+      <div class="opt-row">
+        <button class="opt" id="rate" type="button"></button>
+        <button class="opt" id="veil" type="button"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="listenView" hidden>
+    <div class="cats" id="lcats" role="group" aria-label="듣기 종류"></div>
+    <div class="stage" id="lstage" data-phase="idle">
+      <div class="art" id="lscene" aria-hidden="true"></div>
+      <span class="sticker" id="lsticker" hidden></span>
+      <span class="count" id="lcount"></span>
+      <span class="tag" id="lkind"></span>
+    </div>
+    <section class="card">
+      <h1 class="ltitle" id="ltitle" lang="en" hidden></h1>
+      <p class="q" id="lq"></p>
+      <p class="wait" id="lwait">글자를 보지 말고 들어 보세요.<br>끝나면 글과 뜻이 나와요.</p>
+      <div class="script" id="lscript" hidden></div>
+      <p class="ans" id="lans" hidden></p>
+      <p class="err" id="lerr" hidden></p>
+    </section>
+    <p class="cue-text" id="lcue" aria-live="polite"></p>
+    <div class="foot">
+      <div class="play-row">
+        <button class="ctl" id="lprev" type="button">이전</button>
+        <button class="ctl main" id="lplay" type="button" aria-pressed="false">시작</button>
+        <button class="ctl" id="lnext" type="button">다음</button>
+      </div>
+      <div class="opt-row">
+        <button class="opt" id="lrate" type="button"></button>
+        <button class="opt" id="lshow" type="button"></button>
+      </div>
+      <p class="note">듣기 글은 이 앱을 위해 새로 썼어요. 뉴스는 가상 내용이에요.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const SENTENCES = [
+  ["일상", "Could you say that again, please?", "다시 한번 말씀해 주시겠어요?"],
+  ["일상", "Sorry, I didn't catch that.", "죄송해요, 잘 못 들었어요."],
+  ["일상", "What do you mean by that?", "그게 무슨 뜻이에요?"],
+  ["일상", "Give me a second to think.", "잠깐 생각할 시간을 주세요."],
+  ["일상", "I'm still working on my English.", "아직 영어를 배우는 중이에요."],
+  ["일상", "How was your weekend?", "주말 어떻게 보냈어요?"],
+  ["일상", "I've been really busy lately.", "요즘 정말 바빴어요."],
+  ["일상", "That sounds like a great idea.", "정말 좋은 생각 같아요."],
+  ["일상", "Let me check and get back to you.", "확인해 보고 다시 알려 드릴게요."],
+  ["일상", "What do you do for a living?", "무슨 일 하세요?"],
+  ["일상", "I run a camping channel on YouTube.", "유튜브에서 캠핑 채널을 운영해요."],
+  ["여행", "Where is the check-in counter?", "체크인 카운터가 어디에 있나요?"],
+  ["여행", "Can I have an aisle seat, please?", "통로 쪽 좌석으로 주실 수 있나요?"],
+  ["여행", "My bag didn't arrive.", "제 가방이 도착하지 않았어요."],
+  ["여행", "How do I get to the city center?", "시내 중심가까지 어떻게 가나요?"],
+  ["여행", "Does this bus go to the airport?", "이 버스 공항에 가나요?"],
+  ["여행", "Could you take me to this address?", "이 주소로 가 주시겠어요?"],
+  ["여행", "Is it within walking distance?", "걸어갈 수 있는 거리인가요?"],
+  ["여행", "I have a reservation for two nights.", "2박 예약했어요."],
+  ["여행", "Can I leave my luggage here?", "여기에 짐을 맡겨도 될까요?"],
+  ["여행", "What time is checkout?", "체크아웃은 몇 시인가요?"],
+  ["여행", "The Wi-Fi isn't working in my room.", "제 방 와이파이가 안 돼요."],
+  ["여행", "What's the most popular dish here?", "여기서 제일 인기 있는 메뉴가 뭐예요?"],
+  ["여행", "Can I get the check, please?", "계산서 주시겠어요?"],
+  ["여행", "Do you take credit cards?", "신용카드 받으시나요?"],
+  ["여행", "Could you take a picture of us?", "저희 사진 좀 찍어 주시겠어요?"],
+  ["여행", "I lost my passport.", "여권을 잃어버렸어요."],
+  ["캠핑", "We're camping by the lake this weekend.", "이번 주말에 호숫가에서 캠핑해요."],
+  ["캠핑", "Can you help me set up the tent?", "텐트 치는 것 좀 도와줄래요?"],
+  ["캠핑", "It gets really cold here at night.", "여기는 밤에 정말 추워져요."],
+  ["캠핑", "This sleeping bag keeps me warm.", "이 침낭을 쓰면 따뜻해요."],
+  ["캠핑", "I forgot to bring the charcoal.", "숯 가져오는 걸 깜빡했어요."],
+  ["캠핑", "Is it okay to make a fire here?", "여기서 불 피워도 괜찮아요?"],
+  ["캠핑", "The view from this campsite is amazing.", "이 캠핑장 풍경은 정말 멋져요."],
+  ["캠핑", "It's cheap, but it works really well.", "저렴한데 정말 잘 돼요."],
+  ["캠핑", "Let's pack up before it starts to rain.", "비 오기 전에 짐 싸요."],
+  ["캠핑", "I've been using this for five years.", "이거 5년째 쓰고 있어요."],
+  ["편집", "Please cut the first ten seconds.", "처음 10초를 잘라 주세요."],
+  ["편집", "Make the subtitles a little shorter.", "자막을 조금 더 짧게 해 주세요."],
+  ["편집", "Turn the background music down.", "배경음악 소리를 줄여 주세요."],
+  ["편집", "Can you find the best parts for a short?", "숏폼에 쓸 좋은 부분을 찾아 줄래요?"],
+  ["편집", "Please apply the feedback to this video.", "이 영상에 피드백을 반영해 주세요."],
+  ["편집", "Use the same style as last time.", "지난번과 같은 스타일로 해 주세요."],
+  ["편집", "Remove the part where I repeat myself.", "제가 같은 말을 반복한 부분을 지워 주세요."],
+  ["유튜브", "Thanks for watching this video.", "이 영상을 봐 주셔서 감사합니다."],
+  ["유튜브", "Don't forget to subscribe.", "구독 잊지 마세요."],
+].map(([cat, en, ko]) => ({ cat, en, ko }));
+
+const REPEATS = 3;
+const CATS = ["전체", "일상", "여행", "캠핑", "편집", "유튜브"];
+const $ = (id) => document.getElementById(id);
+const KEY = "ttara-v1";
+
+const S_INK = 'stroke="#17130f" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"';
+const svg = (bg, body) => `<svg viewBox="0 0 400 190" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="190" fill="${bg}"/>${body}</svg>`;
+const hats = {
+  bucket: (c) => `<path d="M-33 66c2-36 64-36 66 0z" fill="${c}" ${S_INK}/><path d="M-50 70c0-9 100-9 100 0 2 7-102 7-100 0z" fill="${c}" ${S_INK}/>`,
+  beanie: (c) => `<path d="M-37 74c-4-54 78-54 74 0z" fill="${c}" ${S_INK}/><rect x="-41" y="62" width="82" height="17" rx="8" fill="#fffdf7" ${S_INK}/>`,
+  hair: (c) => `<path d="M-38 84c-7-58 83-58 76 0-12-22-62-22-76 0z" fill="${c}" ${S_INK}/>`,
+  bun: (c) => `<circle cy="36" r="13" fill="${c}" ${S_INK}/><path d="M-38 84c-7-58 83-58 76 0-12-22-62-22-76 0z" fill="${c}" ${S_INK}/>`,
+};
+const camper = (x, shirt, skin, hat, hatColor, s = 1) => `<g transform="translate(${x} ${190 - 190 * s}) scale(${s})"><g class="bob"><path d="M-60 194c0-46 27-66 60-66s60 20 60 66z" fill="${shirt}" ${S_INK}/><rect x="-13" y="106" width="26" height="29" fill="${skin}" ${S_INK}/><circle cy="84" r="37" fill="${skin}" ${S_INK}/>${hats[hat](hatColor)}</g></g>`;
+const waves = (x, y, flip = 1) => `<g class="waves" transform="translate(${x} ${y}) scale(${flip} 1)"><path d="M0-14c9 8 9 20 0 28"/><path d="M15-25c16 14 16 36 0 50"/><path d="M30-36c23 20 23 52 0 72"/></g>`;
+const bubble = (x, y, text, fill = "#fffdf7") => `<g transform="translate(${x} ${y})"><path d="M-46-24h92a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10h-66l-16 16 2-16h-12a10 10 0 0 1-10-10v-26a10 10 0 0 1 10-10z" fill="${fill}" ${S_INK}/><text y="7" text-anchor="middle" font-family="Bricolage Grotesque, Segoe UI, sans-serif" font-weight="800" font-size="24" fill="#17130f">${text}</text></g>`;
+
+const SCENES = {
+  daily: { paper: "#ece6dc", art: () => svg("#ff7a2b", `
+    <rect x="232" y="24" width="126" height="98" rx="6" fill="#bfe4ff" ${S_INK}/><circle cx="330" cy="58" r="17" fill="#ffce3a" ${S_INK}/><path d="M295 26v94M234 73h122" fill="none" ${S_INK}/>
+    <path d="M118 0v22" fill="none" ${S_INK}/><path d="M92 46c0-32 52-32 52 0z" fill="#ffce3a" ${S_INK}/>
+    <rect x="0" y="162" width="400" height="30" fill="#7a4221" ${S_INK}/>
+    <path d="M286 138h40v22a10 10 0 0 1-10 10h-20a10 10 0 0 1-10-10z" fill="#fffdf7" ${S_INK}/><path d="M326 144c18-3 18 18 0 16" fill="none" ${S_INK}/>
+    ${camper(112, "#2b62f6", "#f1c6a2", "hair", "#4a2c17", .94)}${waves(178, 92)}`) },
+  camp: { paper: "#e2e8f6", art: () => svg("#2854d8", `
+    <circle cx="330" cy="44" r="24" fill="#fff3c4" ${S_INK}/>
+    <g fill="#fff3c4"><circle class="twinkle" cx="52" cy="30" r="4"/><circle cx="130" cy="20" r="3"/><circle class="twinkle" cx="238" cy="36" r="4"/><circle cx="282" cy="16" r="3"/></g>
+    <path d="M-10 134 76 54l58 56 42-36 92 76z" fill="#17388f" ${S_INK}/>
+    <rect x="0" y="146" width="400" height="46" fill="#2f7d52" ${S_INK}/>
+    <path d="M198 158 262 66l64 92z" fill="#ffce3a" ${S_INK}/><path d="M262 66v92M246 158l16-40 16 40z" fill="#ff7a2b" ${S_INK}/>
+    <g transform="translate(160 164)"><path class="flame" d="M0-42c16 16 20 26 12 38H-12C-20-16-14-26 0-42z" fill="#ff7a2b" ${S_INK}/><path d="M-22 2 22-6M-22-6 22 2" fill="none" stroke="#7a4221" stroke-width="9" stroke-linecap="round"/></g>
+    ${camper(70, "#ff5c8a", "#e7b48c", "bucket", "#e8dcae", .78)}${waves(120, 118)}`) },
+  edit: { paper: "#f7e4ec", art: () => svg("#ffce3a", `
+    <rect x="142" y="18" width="232" height="132" rx="10" fill="#fffdf7" ${S_INK}/>
+    <rect x="160" y="34" width="196" height="62" rx="5" fill="#2b62f6" ${S_INK}/><path d="M246 50v30l26-15z" fill="#ffce3a" ${S_INK}/>
+    <rect x="160" y="108" width="62" height="13" rx="4" fill="#ff5c8a"/><rect x="226" y="108" width="84" height="13" rx="4" fill="#12a58c"/><rect x="314" y="108" width="42" height="13" rx="4" fill="#ff7a2b"/>
+    <rect x="160" y="126" width="118" height="10" rx="4" fill="#b7aa95"/><rect x="284" y="126" width="72" height="10" rx="4" fill="#b7aa95"/>
+    <rect class="head" x="178" y="102" width="4" height="40" fill="#17130f"/>
+    <rect x="236" y="150" width="44" height="26" fill="#d9cdb9" ${S_INK}/><rect x="0" y="174" width="400" height="18" fill="#17130f"/>
+    ${camper(72, "#12a58c", "#d9a06f", "beanie", "#ff5c8a", .9)}${waves(136, 86)}`) },
+  yt: { paper: "#f7e6d8", art: () => svg("#ff6fa3", `
+    <rect x="0" y="160" width="400" height="32" fill="#fff3c4" ${S_INK}/>
+    <path d="M300 112 266 176M300 112v64M300 112l34 64" fill="none" ${S_INK}/>
+    <rect x="256" y="58" width="88" height="58" rx="9" fill="#17130f"/><circle cx="300" cy="87" r="20" fill="#2b62f6" stroke="#fffdf7" stroke-width="5"/><circle cx="330" cy="70" r="5" fill="#ff3b30"/>
+    <path transform="translate(42 44)" d="M0 26C-30 6-18-14 0-2 18-14 30 6 0 26z" fill="#fffdf7" ${S_INK}/><path transform="translate(190 34) scale(.68)" d="M0 26C-30 6-18-14 0-2 18-14 30 6 0 26z" fill="#ffce3a" ${S_INK}/>
+    ${camper(120, "#ffce3a", "#f1c6a2", "bucket", "#2f7d52", .9)}<path d="M190 164c20-14 26-34 28-52" fill="none" stroke="#17130f" stroke-width="20" stroke-linecap="round"/><path d="M190 164c20-14 26-34 28-52" fill="none" stroke="#ffce3a" stroke-width="10" stroke-linecap="round"/><circle cx="219" cy="102" r="13" fill="#f1c6a2" ${S_INK}/>${waves(226, 66)}`) },
+  travel: { paper: "#dcf0f7", art: () => svg("#5cc8f2", `
+    <circle cx="44" cy="40" r="20" fill="#ffce3a" ${S_INK}/>
+    <path d="M196 62c-4-20 26-26 32-10 12-12 34-2 28 12 14 4 10 20-4 20h-52c-16 0-18-20-4-22z" fill="#fffdf7" ${S_INK}/>
+    <g transform="translate(332 36) rotate(-9) scale(.8)"><path d="M-42-8-58-32h17l18 24z" fill="#ff5c8a" ${S_INK}/><rect x="-54" y="-13" width="110" height="26" rx="13" fill="#fffdf7" ${S_INK}/><path d="M-8 5-34 38h20L24 5z" fill="#ffce3a" ${S_INK}/><g fill="#2b62f6"><circle cx="-24" cy="-3" r="3.5"/><circle cx="-8" cy="-3" r="3.5"/><circle cx="8" cy="-3" r="3.5"/><circle cx="24" cy="-3" r="3.5"/></g></g>
+    <rect x="0" y="166" width="400" height="26" fill="#f4dfae" ${S_INK}/>
+    <path d="M286 106V88a8 8 0 0 1 8-8h24a8 8 0 0 1 8 8v18" fill="none" ${S_INK}/>
+    <rect x="262" y="104" width="88" height="62" rx="10" fill="#ff7a2b" ${S_INK}/><path d="M284 106v58M328 106v58" fill="none" ${S_INK}/>
+    <circle cx="306" cy="134" r="11" fill="#ffce3a" ${S_INK}/>
+    ${camper(112, "#12a58c", "#f1c6a2", "bucket", "#ff5c8a", .9)}${waves(178, 96)}`) },
+  news: { paper: "#dff1ec", art: () => svg("#12a58c", `
+    <rect x="228" y="20" width="146" height="82" rx="8" fill="#17130f"/><text x="301" y="72" text-anchor="middle" font-family="Bricolage Grotesque, Segoe UI, sans-serif" font-weight="800" font-size="38" fill="#ffce3a">NEWS</text><circle cx="248" cy="38" r="7" fill="#ff3b30"/>
+    ${camper(112, "#17388f", "#e7b48c", "hair", "#2b1a10", .96)}<path d="M112 128l-10 16 10 38 10-38z" fill="#ff5c8a" ${S_INK}/>
+    <rect x="-6" y="154" width="412" height="42" fill="#fffdf7" ${S_INK}/><rect x="0" y="168" width="400" height="10" fill="#ff5c8a"/>
+    <rect x="220" y="124" width="92" height="30" rx="3" fill="#fff3c4" ${S_INK}/>${waves(178, 92)}`) },
+  speech: { paper: "#e9e2fa", art: () => svg("#7450f0", `
+    <path d="M150-10h100l50 210H100z" fill="#ffe99a" opacity=".55"/>
+    <path d="M-5-5h96c-4 74-30 144-96 200z" fill="#e23d5b" ${S_INK}/><path d="M405-5H309c4 74 30 144 96 200z" fill="#e23d5b" ${S_INK}/>
+    ${camper(200, "#fffdf7", "#d9a06f", "bun", "#17130f", .84)}
+    <path d="M154 134h92l-12 62h-68z" fill="#ffce3a" ${S_INK}/><path d="M150 124h100l4 14H146z" fill="#7a4221" ${S_INK}/><circle cx="200" cy="164" r="11" fill="#fffdf7" ${S_INK}/>
+    ${waves(258, 88)}`) },
+  talk: { paper: "#eef3d4", art: () => svg("#a8d63f", `
+    <rect x="0" y="162" width="400" height="30" fill="#2f7d52" ${S_INK}/>
+    ${bubble(132, 40, "Hi!")}${bubble(278, 42, "Hey!", "#ffce3a")}
+    ${camper(104, "#2b62f6", "#f1c6a2", "bucket", "#ff7a2b", .82)}${camper(296, "#ff5c8a", "#a86f46", "hair", "#17130f", .82)}${waves(176, 122)}`) },
+};
+const REPEAT_SCENE = { 일상: "daily", 캠핑: "camp", 편집: "edit", 유튜브: "yt", 여행: "travel" };
+const LISTEN_SCENE = { 뉴스: "news", 연설: "speech", 대화: "talk" };
+const STICKER = { listen: "잘 들어 봐요", turn: "이제 따라 해요!" };
+
+function putScene(el, key) {
+  if (el.dataset.key === key) return;
+  el.dataset.key = key;
+  el.innerHTML = SCENES[key].art();
+}
+function paintRepeat() {
+  const key = REPEAT_SCENE[current().cat];
+  putScene($("scene"), key);
+  $("tag").textContent = current().cat + " 표현";
+  if (state.mode === "repeat") document.documentElement.style.setProperty("--paper", SCENES[key].paper);
+}
+function paintListen() {
+  const key = LISTEN_SCENE[currentListen().cat];
+  putScene($("lscene"), key);
+  $("lstage").classList.toggle("compact", revealed);
+  if (state.mode === "listen") document.documentElement.style.setProperty("--paper", SCENES[key].paper);
+}
+function setStage(phase) {
+  for (const [stage, sticker] of [["stage", "sticker"], ["lstage", "lsticker"]]) {
+    $(stage).dataset.phase = phase;
+    $(sticker).hidden = phase === "idle";
+    $(sticker).textContent = STICKER[phase] || "";
+  }
+}
+
+let wordSpans = [];
+function paintWords(text) {
+  let pos = 0;
+  const box = $("en");
+  box.replaceChildren();
+  wordSpans = text.split(" ").map((w) => {
+    const s = document.createElement("span");
+    s.className = "w";
+    s.textContent = w + " ";
+    s.dataset.start = pos;
+    pos += w.length + 1;
+    box.appendChild(s);
+    return s;
+  });
+}
+function markChar(ci) {
+  let cur = 0;
+  wordSpans.forEach((s, i) => { if (+s.dataset.start <= ci) cur = i; });
+  wordSpans.forEach((s, i) => { s.className = "w " + (i < cur ? "past" : i === cur ? "cur" : "todo"); });
+}
+function clearWords() { wordSpans.forEach((s) => { s.className = "w"; }); }
+// Many Android voices never report word positions, so a timed sweep drives the highlight until one arrives.
+async function sweep(len, ms, id, over) {
+  const t0 = performance.now();
+  while (live(id) && !over()) {
+    const p = (performance.now() - t0) / ms;
+    if (p < 1) markChar(p * len);
+    await sleep(50, id);
+  }
+}
+
+
+let state = { cat: "전체", index: 0, slow: true, veiled: false, mode: "repeat", lCat: "전체", lIndex: 0 };
+try { state = { ...state, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) {}
+if (!CATS.includes(state.cat)) state.cat = "전체";
+
+let run = 0;
+let running = false;
+let wake = null;
+let englishVoice = null;
+const synth = window.speechSynthesis || null;
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function list() { return state.cat === "전체" ? SENTENCES : SENTENCES.filter((s) => s.cat === state.cat); }
+function current() { const l = list(); state.index = ((state.index % l.length) + l.length) % l.length; return l[state.index]; }
+function rate() { return state.slow ? 0.82 : 1; }
+function live(id) { return id === run; }
+
+function pickVoice() {
+  if (!synth) return;
+  const voices = synth.getVoices().filter((v) => /^en[-_]US/i.test(v.lang));
+  englishVoice = voices.find((v) => /google/i.test(v.name)) || voices[0] || null;
+}
+if (synth) { pickVoice(); synth.addEventListener?.("voiceschanged", pickVoice); }
+
+function setCue(text, speaking) {
+  const c = $("cue");
+  c.textContent = text;
+  c.classList.toggle("speak", !!speaking);
+}
+function setReps(done) {
+  [...$("reps").children].forEach((d, i) => d.classList.toggle("on", i < done));
+}
+function setFill(pct) { $("fill").style.width = pct + "%"; }
+function showError(msg) { const e = $("err"); e.textContent = msg; e.hidden = !msg; }
+
+function render() {
+  const s = current(), l = list();
+  paintWords(s.en);
+  $("ko").textContent = s.ko;
+  $("ko").classList.toggle("veiled", state.veiled);
+  $("count").textContent = (state.index + 1) + " / " + l.length;
+  $("rate").textContent = state.slow ? "속도: 천천히" : "속도: 보통";
+  $("veil").textContent = state.veiled ? "뜻 보기" : "뜻 가리기";
+  [...$("cats").children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cat === state.cat)));
+  const p = $("play");
+  p.textContent = running ? "멈춤" : "시작";
+  p.setAttribute("aria-pressed", String(running));
+  paintRepeat();
+  save();
+}
+
+function sleep(ms, id) {
+  return new Promise((resolve) => {
+    const end = performance.now() + ms;
+    const tick = () => (!live(id) || performance.now() >= end) ? resolve() : setTimeout(tick, 40);
+    tick();
+  });
+}
+
+function estimate(text) { return (text.split(/\s+/).length * 380 + 500) / rate(); }
+
+function speak(text, id, opts = {}) {
+  return new Promise((resolve) => {
+    const guess = estimate(text);
+    let started = 0, finished = false;
+    const finish = (ms) => { if (!finished) { finished = true; clearTimeout(guard); resolve(ms); } };
+    // Some Android speech engines never report the end of an utterance.
+    const guard = setTimeout(() => finish(guess), guess * 2.5 + 4000);
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = rate();
+    const chosen = opts.voice || englishVoice;
+    if (chosen) u.voice = chosen;
+    if (opts.pitch) u.pitch = opts.pitch;
+    u.onstart = () => { started = performance.now(); opts.onStart?.(); };
+    u.onboundary = (ev) => { if (ev.name === undefined || ev.name === "word") opts.onChar?.(ev.charIndex); };
+    u.onend = () => {
+      const measured = started ? performance.now() - started : 0;
+      finish(measured > 300 ? measured : guess);
+    };
+    u.onerror = (ev) => {
+      if (live(id) && ev.error !== "canceled" && ev.error !== "interrupted") {
+        showError("영어 음성을 재생하지 못했어요. 휴대폰 설정의 음성 출력(TTS)에서 Google 엔진과 영어 음성이 켜져 있는지 확인해 주세요.");
+        stop();
+      }
+      finish(0);
+    };
+    synth.resume();
+    synth.speak(u);
+  });
+}
+
+async function countdown(ms, id) {
+  const start = performance.now();
+  while (live(id)) {
+    const p = (performance.now() - start) / ms;
+    if (p >= 1) break;
+    setFill((1 - p) * 100);
+    await sleep(40, id);
+  }
+  setFill(0);
+}
+
+async function play() {
+  if (!synth) { showError("이 브라우저는 음성 읽기를 지원하지 않아요. 휴대폰의 Chrome에서 열어 주세요."); return; }
+  showError("");
+  const id = ++run;
+  running = true;
+  render();
+  try { wake = await navigator.wakeLock?.request("screen"); } catch (e) { wake = null; }
+  await sleep(150, id);
+  while (live(id)) {
+    const s = current();
+    let known = 0;
+    for (let r = 0; r < REPEATS && live(id); r++) {
+      setReps(r);
+      setFill(100);
+      setCue("잘 들어 보세요", false);
+      setStage("listen");
+      let heard = false, over = false;
+      const span = known || estimate(s.en);
+      const spoken = await speak(s.en, id, {
+        onChar: (c) => { heard = true; markChar(c); },
+        onStart: () => sweep(s.en.length, span, id, () => over || heard),
+      });
+      over = true;
+      known = spoken || known;
+      clearWords();
+      if (!live(id)) return;
+      setCue("이제 따라 말해 보세요", true);
+      setStage("turn");
+      await countdown(Math.max(1600, spoken * 1.25 + 600), id);
+      if (!live(id)) return;
+      setReps(r + 1);
+    }
+    await sleep(350, id);
+    if (!live(id)) return;
+    state.index += 1;
+    setReps(0);
+    render();
+  }
+}
+
+function stop() {
+  run++;
+  running = false;
+  if (synth) synth.cancel();
+  try { wake?.release(); } catch (e) {}
+  nowLine = -1;
+  setListenCue(LISTEN_IDLE);
+  setStage("idle");
+  clearWords();
+  renderListen();
+  wake = null;
+  setFill(0);
+  setCue("시작을 누르면 3번씩 들려 드려요", false);
+  render();
+}
+
+function move(delta) {
+  const was = running;
+  stop();
+  state.index += delta;
+  setReps(0);
+  render();
+  if (was) play();
+}
+
+CATS.forEach((cat) => {
+  const b = document.createElement("button");
+  b.className = "cat"; b.type = "button"; b.textContent = cat; b.dataset.cat = cat;
+  b.addEventListener("click", () => { stop(); state.cat = cat; state.index = 0; setReps(0); render(); });
+  $("cats").appendChild(b);
+});
+for (let i = 0; i < REPEATS; i++) { const d = document.createElement("span"); d.className = "rep"; $("reps").appendChild(d); }
+
+$("play").addEventListener("click", () => running ? stop() : play());
+$("prev").addEventListener("click", () => move(-1));
+$("next").addEventListener("click", () => move(1));
+$("rate").addEventListener("click", () => { state.slow = !state.slow; render(); });
+$("veil").addEventListener("click", () => { state.veiled = !state.veiled; render(); });
+$("ko").addEventListener("click", () => { if (state.veiled) { state.veiled = false; render(); } });
+const n = (en, ko) => ["", en, ko];
+const LISTENS = [
+  { cat: "뉴스", title: "Rain Closes Campsites", q: "캠핑장은 언제 다시 문을 열까요?", a: "월요일", lines: [
+    n("Heavy rain closed three mountain campsites on Friday.", "금요일에 폭우로 산속 캠핑장 세 곳이 문을 닫았습니다."),
+    n("Park officials say the roads are not safe right now.", "공원 관계자는 지금 도로가 안전하지 않다고 말합니다."),
+    n("No one was hurt, but some tents were damaged.", "다친 사람은 없지만 텐트 일부가 망가졌습니다."),
+    n("The campsites plan to open again on Monday.", "캠핑장들은 월요일에 다시 문을 열 계획입니다."),
+    n("Visitors can get a full refund.", "방문객은 전액 환불받을 수 있습니다."),
+  ] },
+  { cat: "뉴스", title: "A Library That Lends Tents", q: "장비는 며칠 동안 빌릴 수 있나요?", a: "7일", lines: [
+    n("A small town library now lends camping gear.", "한 소도시 도서관이 이제 캠핑 장비를 빌려줍니다."),
+    n("People can borrow tents and stoves for free.", "사람들은 텐트와 버너를 무료로 빌릴 수 있습니다."),
+    n("Each item can be kept for seven days.", "각 물품은 7일 동안 가지고 있을 수 있습니다."),
+    n("The library says families are its biggest users.", "도서관은 가족 단위가 가장 많이 이용한다고 말합니다."),
+    n("Next year, it hopes to add bicycles.", "내년에는 자전거도 추가하고 싶어 합니다."),
+  ] },
+  { cat: "뉴스", title: "Grandmother's Kitchen Goes Viral", q: "영상은 무엇으로 찍었나요?", a: "오래된 휴대폰", lines: [
+    n("A high school student made a video of her grandmother cooking.", "한 고등학생이 할머니의 요리 영상을 만들었습니다."),
+    n("It reached one million views in a week.", "영상은 일주일 만에 조회수 백만 회를 넘었습니다."),
+    n("She filmed it on an old phone.", "학생은 오래된 휴대폰으로 촬영했습니다."),
+    n("She says she only wanted to save the family recipes.", "그저 집안 요리법을 남기고 싶었다고 말합니다."),
+    n("Now she is writing a short cookbook.", "지금은 짧은 요리책을 쓰고 있습니다."),
+  ] },
+  { cat: "뉴스", title: "Night Buses Are Coming", q: "새 버스는 몇 시까지 운행하나요?", a: "새벽 2시", lines: [
+    n("The city will add night buses starting next month.", "시는 다음 달부터 심야 버스를 추가합니다."),
+    n("The new buses will run until two in the morning.", "새 버스는 새벽 2시까지 운행합니다."),
+    n("A ticket will cost the same as a day ticket.", "요금은 낮 시간 요금과 같습니다."),
+    n("Many restaurant workers asked for the change.", "많은 식당 직원들이 이 변화를 요청했습니다."),
+    n("City leaders will review the plan after six months.", "시 지도부는 6개월 뒤 계획을 다시 검토합니다."),
+  ] },
+  { cat: "연설", title: "Start Before You Are Ready", q: "첫 영상을 본 사람은 몇 명이었나요?", a: "11명", lines: [
+    n("When I made my first video, I was terrified.", "첫 영상을 만들 때 저는 무척 겁이 났습니다."),
+    n("The sound was bad and my hands were shaking.", "소리는 엉망이었고 손은 떨렸습니다."),
+    n("Only eleven people watched it.", "본 사람은 겨우 열한 명이었습니다."),
+    n("But one of them left a kind comment.", "하지만 그중 한 분이 따뜻한 댓글을 남겼습니다."),
+    n("That comment kept me going for a whole year.", "그 댓글 덕분에 꼬박 일 년을 계속할 수 있었습니다."),
+    n("So please, start before you feel ready.", "그러니 준비됐다고 느끼기 전에 시작하세요."),
+  ] },
+  { cat: "연설", title: "Small, Boring Days", q: "매일 하라고 한 시간은 얼마인가요?", a: "10분", lines: [
+    n("Nobody gets better in one big day.", "하루 만에 크게 나아지는 사람은 없습니다."),
+    n("You get better on small, boring days.", "작고 지루한 날들 속에서 나아집니다."),
+    n("Ten minutes is not much.", "10분은 긴 시간이 아닙니다."),
+    n("But ten minutes every day is a lot.", "하지만 매일 10분은 큰 시간입니다."),
+    n("Do something small today, and do it again tomorrow.", "오늘 작은 일을 하고, 내일 또 하세요."),
+  ] },
+  { cat: "연설", title: "Stop Trying to Be Perfect", q: "여행자는 몇 개 언어를 했나요?", a: "3개", lines: [
+    n("I used to be afraid of speaking English.", "저는 영어로 말하는 게 두려웠습니다."),
+    n("I thought people would laugh at my mistakes.", "사람들이 제 실수를 비웃을 거라고 생각했습니다."),
+    n("Then I met a traveler who spoke three languages badly.", "그러다 세 언어를 서툴게 하는 여행자를 만났습니다."),
+    n("She had friends all over the world.", "그녀는 전 세계에 친구가 있었습니다."),
+    n("That day, I stopped trying to be perfect.", "그날 저는 완벽하려는 노력을 그만두었습니다."),
+  ] },
+  { cat: "연설", title: "Go Outside", q: "휴대폰을 얼마 동안 가방에 넣어 두라고 했나요?", a: "1시간", lines: [
+    n("Go outside this weekend.", "이번 주말에 밖으로 나가세요."),
+    n("Leave your phone in your bag for one hour.", "한 시간 동안 휴대폰을 가방에 넣어 두세요."),
+    n("Listen to the wind and look at the trees.", "바람 소리를 듣고 나무를 바라보세요."),
+    n("You will not solve every problem.", "모든 문제가 해결되지는 않을 겁니다."),
+    n("But you will remember how to breathe.", "하지만 숨 쉬는 법은 다시 기억날 겁니다."),
+  ] },
+  { cat: "대화", title: "Checking In at a Campsite", q: "온수는 몇 시까지 나오나요?", a: "10시", lines: [
+    ["A", "Hi, I have a reservation for tonight.", "안녕하세요, 오늘 밤 예약했어요."],
+    ["B", "Great. What's your name?", "좋아요. 성함이 어떻게 되세요?"],
+    ["A", "It's Min. I booked a site near the river.", "민이에요. 강 근처 자리로 예약했어요."],
+    ["B", "Okay, you're at site twelve.", "네, 12번 자리입니다."],
+    ["A", "Is there hot water?", "온수 나오나요?"],
+    ["B", "Yes, but only until ten o'clock.", "네, 하지만 10시까지만요."],
+  ] },
+  { cat: "대화", title: "Ordering Coffee", q: "손님은 결국 어떤 크기를 골랐나요?", a: "큰 사이즈", lines: [
+    ["A", "Can I get an iced coffee, please?", "아이스커피 한 잔 주시겠어요?"],
+    ["B", "Sure. What size?", "네. 어떤 크기로 드릴까요?"],
+    ["A", "Medium. Actually, make it a large.", "중간이요. 아니, 큰 걸로 할게요."],
+    ["B", "Anything else?", "더 필요한 건 없으세요?"],
+    ["A", "No, that's all. Thanks.", "아뇨, 그게 다예요. 감사합니다."],
+    ["B", "That'll be five dollars.", "5달러입니다."],
+  ] },
+  { cat: "대화", title: "Feedback on a Video", q: "엔딩을 얼마나 줄이라고 했나요?", a: "30초 정도", lines: [
+    ["A", "Did you watch my new video?", "내 새 영상 봤어?"],
+    ["B", "I did. The first minute was great.", "봤어. 처음 1분이 정말 좋았어."],
+    ["A", "What about the ending?", "엔딩은 어땠어?"],
+    ["B", "It felt a little long.", "조금 길게 느껴졌어."],
+    ["A", "Should I cut it?", "잘라야 할까?"],
+    ["B", "Yes, maybe by thirty seconds.", "응, 30초 정도."],
+  ] },
+  { cat: "대화", title: "Making Weekend Plans", q: "두 사람은 몇 시에 만나나요?", a: "오후 2시", lines: [
+    ["A", "Are you free on Saturday?", "토요일에 시간 있어?"],
+    ["B", "Not in the morning, but the afternoon is fine.", "오전은 안 되는데 오후는 괜찮아."],
+    ["A", "Do you want to go hiking?", "등산 갈래?"],
+    ["B", "Sure. Where should we meet?", "좋아. 어디서 만날까?"],
+    ["A", "Let's meet at the station at two.", "2시에 역에서 만나자."],
+    ["B", "Perfect. See you then.", "좋아. 그때 봐."],
+  ] },
+];
+const LCATS = ["전체", "뉴스", "연설", "대화"];
+const LISTEN_IDLE = "시작을 누르면 글자 없이 2번 들려 드려요";
+if (!LCATS.includes(state.lCat)) state.lCat = "전체";
+let revealed = false;
+var nowLine = -1;
+
+function listenItems() { return state.lCat === "전체" ? LISTENS : LISTENS.filter((x) => x.cat === state.lCat); }
+function currentListen() { const l = listenItems(); state.lIndex = ((state.lIndex % l.length) + l.length) % l.length; return l[state.lIndex]; }
+function setListenCue(text) { $("lcue").textContent = text; }
+function markLine(i) {
+  nowLine = i;
+  [...$("lscript").children].forEach((el, k) => {
+    el.classList.toggle("now", k === i);
+    if (k === i) el.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+  });
+}
+function voiceFor(who) {
+  if (who === "A") return { pitch: 0.92 };
+  if (who !== "B") return {};
+  const other = synth ? synth.getVoices().find((v) => /^en[-_]US/i.test(v.lang) && v !== englishVoice) : null;
+  return { pitch: 1.18, voice: other || undefined };
+}
+function renderListen() {
+  const s = currentListen();
+  $("lkind").textContent = s.cat;
+  $("lcount").textContent = (state.lIndex + 1) + " / " + listenItems().length;
+  $("lq").textContent = s.q;
+  $("ltitle").textContent = s.title;
+  $("ltitle").hidden = !revealed;
+  $("lwait").hidden = revealed;
+  $("lscript").hidden = !revealed;
+  $("lans").hidden = !revealed;
+  $("lans").textContent = "답: " + s.a;
+  const box = $("lscript");
+  box.replaceChildren();
+  s.lines.forEach(([who, en, ko], i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "line" + (i === nowLine ? " now" : "");
+    const eng = document.createElement("span");
+    eng.className = "line-en"; eng.lang = "en"; eng.textContent = (who ? who + ": " : "") + en;
+    const kor = document.createElement("span");
+    kor.className = "line-ko"; kor.textContent = ko;
+    b.append(eng, kor);
+    b.addEventListener("click", () => sayLine(i));
+    box.appendChild(b);
+  });
+  [...$("lcats").children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cat === state.lCat)));
+  $("lplay").textContent = running ? "멈춤" : "시작";
+  $("lplay").setAttribute("aria-pressed", String(running));
+  $("lrate").textContent = state.slow ? "속도: 천천히" : "속도: 보통";
+  $("lshow").textContent = revealed ? "글자 숨기기" : "글자 보기";
+  $("repeatView").hidden = state.mode !== "repeat";
+  $("listenView").hidden = state.mode !== "listen";
+  $("modeRepeat").setAttribute("aria-pressed", String(state.mode === "repeat"));
+  $("modeListen").setAttribute("aria-pressed", String(state.mode === "listen"));
+  paintListen();
+  save();
+}
+async function speakAll(item, id, show) {
+  for (let i = 0; i < item.lines.length && live(id); i++) {
+    if (show) markLine(i);
+    await speak(item.lines[i][1], id, voiceFor(item.lines[i][0]));
+    if (!live(id)) return;
+    await sleep(280, id);
+  }
+  if (live(id)) markLine(-1);
+}
+async function playListen() {
+  if (!synth) { $("lerr").textContent = "이 브라우저는 음성 읽기를 지원하지 않아요. 휴대폰의 Chrome에서 열어 주세요."; $("lerr").hidden = false; return; }
+  $("lerr").hidden = true;
+  const id = ++run;
+  running = true;
+  revealed = false;
+  nowLine = -1;
+  renderListen();
+  try { wake = await navigator.wakeLock?.request("screen"); } catch (e) { wake = null; }
+  await sleep(150, id);
+  const item = currentListen();
+  for (let round = 1; round <= 2 && live(id); round++) {
+    setListenCue("글자 없이 듣기 " + round + " / 2");
+    setStage("listen");
+    await speakAll(item, id, false);
+    if (!live(id)) return;
+    await sleep(1200, id);
+  }
+  if (!live(id)) return;
+  revealed = true;
+  renderListen();
+  setListenCue("글을 보며 듣기");
+  setStage("listen");
+  await speakAll(item, id, true);
+  if (!live(id)) return;
+  stop();
+  setListenCue("문장을 누르면 다시 들을 수 있어요");
+}
+async function sayLine(i) {
+  stop();
+  const id = ++run;
+  const line = currentListen().lines[i];
+  markLine(i);
+  await sleep(150, id);
+  if (!live(id)) return;
+  await speak(line[1], id, voiceFor(line[0]));
+  if (live(id)) markLine(-1);
+}
+function moveListen(delta) {
+  stop();
+  state.lIndex += delta;
+  revealed = false;
+  renderListen();
+}
+function setMode(mode) { stop(); state.mode = mode; render(); renderListen(); }
+
+LCATS.forEach((cat) => {
+  const b = document.createElement("button");
+  b.className = "cat"; b.type = "button"; b.textContent = cat; b.dataset.cat = cat;
+  b.addEventListener("click", () => { stop(); state.lCat = cat; state.lIndex = 0; revealed = false; renderListen(); });
+  $("lcats").appendChild(b);
+});
+$("modeRepeat").addEventListener("click", () => setMode("repeat"));
+$("modeListen").addEventListener("click", () => setMode("listen"));
+$("lplay").addEventListener("click", () => running ? stop() : playListen());
+$("lprev").addEventListener("click", () => moveListen(-1));
+$("lnext").addEventListener("click", () => moveListen(1));
+$("lrate").addEventListener("click", () => { state.slow = !state.slow; render(); renderListen(); });
+$("lshow").addEventListener("click", () => { revealed = !revealed; nowLine = -1; renderListen(); });
+setListenCue(LISTEN_IDLE);
+renderListen();
+
+document.addEventListener("visibilitychange", () => { if (document.hidden && running) stop(); });
+
+setCue("시작을 누르면 3번씩 들려 드려요", false);
+render();
+</script>
+</body>
+</html>
