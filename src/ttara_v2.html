@@ -1,0 +1,575 @@
+<title>따라말하기 영어</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=IBM+Plex+Sans+KR:wght@400;600&display=swap">
+<style>
+/* One-handed phone screen: sentence on top, large controls in thumb reach. Pine and lantern colors from a night at camp. */
+:root {
+  --bg: #e9efe6; --surface: #f8faf5; --fg: #17281f; --muted: #52665a; --line: #c9d5c8;
+  --pine: #1e5a42; --on-pine: #f4f8f1; --lantern: #f2b42c; --on-lantern: #231a05; --alert: #9b2c1f;
+  --en: "Bricolage Grotesque", "Segoe UI", Roboto, sans-serif;
+  --ko: "IBM Plex Sans KR", "Noto Sans KR", "Malgun Gothic", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101c16; --surface: #1a2a22; --fg: #edf3ea; --muted: #a7b9ac; --line: #33473b;
+    --pine: #6fc79f; --on-pine: #0d1b14; --lantern: #f5bd42; --on-lantern: #231a05; --alert: #ff9d8c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101c16; --surface: #1a2a22; --fg: #edf3ea; --muted: #a7b9ac; --line: #33473b;
+  --pine: #6fc79f; --on-pine: #0d1b14; --lantern: #f5bd42; --on-lantern: #231a05; --alert: #ff9d8c; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--ko); }
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 3px solid var(--lantern); outline-offset: 2px; }
+
+.app {
+  height: 100%; max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;
+  padding-block: 14px 20px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.cats { display: flex; gap: 6px; }
+.cat {
+  flex: 1 1 0; min-width: 0; min-height: 44px; padding: 0 6px; border: 1px solid var(--line); border-radius: 8px;
+  background: transparent; color: var(--muted); font-size: 15px; font-weight: 600; white-space: nowrap;
+}
+.cat[aria-pressed="true"] { background: var(--pine); border-color: var(--pine); color: var(--on-pine); }
+
+.card {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 18px;
+  padding: 18px 20px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+}
+.meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 15px; font-variant-numeric: tabular-nums; }
+.reps { display: flex; gap: 7px; align-items: center; }
+.rep { width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--muted); }
+.rep.on { background: var(--lantern); border-color: var(--lantern); }
+.text { margin-block: auto; display: flex; flex-direction: column; gap: 14px; }
+.en { margin: 0; font-family: var(--en); font-weight: 700; font-size: clamp(32px, 9.4vw, 46px); line-height: 1.14; letter-spacing: -0.01em; text-wrap: balance; overflow-wrap: anywhere; }
+.ko { margin: 0; color: var(--muted); font-size: 19px; line-height: 1.5; }
+.ko.veiled { filter: blur(9px); user-select: none; }
+
+.cue { display: flex; flex-direction: column; gap: 9px; }
+.cue-text { margin: 0; min-height: 28px; font-size: 20px; font-weight: 600; color: var(--pine); }
+.cue-text.speak { color: var(--fg); }
+.track { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.fill { height: 100%; width: 0; border-radius: 5px; background: var(--lantern); }
+.err { margin: 0; color: var(--alert); font-size: 15px; line-height: 1.5; }
+
+.play-row { display: grid; grid-template-columns: 1fr 1.7fr 1fr; gap: 10px; }
+.ctl { min-height: 74px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); font-size: 17px; font-weight: 600; }
+.main { border: 0; background: var(--lantern); color: var(--on-lantern); font-size: 22px; }
+.main[aria-pressed="true"] { background: var(--pine); color: var(--on-pine); }
+.opt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.opt { min-height: 48px; border: 1px solid var(--line); border-radius: 10px; background: transparent; color: var(--fg); font-size: 15px; font-weight: 600; }
+.foot { display: flex; flex-direction: column; gap: 10px; }
+.modes { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.mode { min-height: 46px; border: 0; background: transparent; color: var(--muted); font-size: 16px; font-weight: 600; }
+.mode[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 14px; }
+.ltitle { margin: 0; font-family: var(--en); font-size: 25px; line-height: 1.15; }
+.q { margin: 0; font-size: 19px; font-weight: 600; line-height: 1.5; }
+.wait { margin: auto 0; text-align: center; color: var(--muted); font-size: 17px; line-height: 1.6; }
+.script { display: flex; flex-direction: column; gap: 3px; }
+.line { display: block; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px; background: transparent; text-align: left; }
+.line-en { display: block; font-family: var(--en); font-size: 21px; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.line-ko { display: block; margin-top: 3px; font-size: 15px; line-height: 1.45; color: var(--muted); }
+.line.now { background: var(--lantern); color: var(--on-lantern); }
+.line.now .line-ko { color: var(--on-lantern); }
+.ans { margin: 0; color: var(--pine); font-size: 17px; font-weight: 600; }
+.note { margin: 0; color: var(--muted); font-size: 13px; text-align: center; }
+</style>
+
+<main class="app">
+  <div class="modes" role="group" aria-label="연습 종류">
+    <button class="mode" id="modeRepeat" type="button">따라 말하기</button>
+    <button class="mode" id="modeListen" type="button">듣기</button>
+  </div>
+  <div class="view" id="repeatView">
+  <div class="cats" id="cats" role="group" aria-label="문장 종류"></div>
+
+  <section class="card" aria-live="off">
+    <div class="meta">
+      <span id="count"></span>
+      <span class="reps" id="reps" aria-label="반복 횟수"></span>
+    </div>
+    <div class="text">
+      <p class="en" id="en" lang="en"></p>
+      <p class="ko" id="ko"></p>
+    </div>
+    <div class="cue">
+      <p class="cue-text" id="cue" aria-live="polite"></p>
+      <div class="track"><div class="fill" id="fill"></div></div>
+    </div>
+    <p class="err" id="err" hidden></p>
+  </section>
+
+  <div class="foot">
+    <div class="play-row">
+      <button class="ctl" id="prev" type="button">이전</button>
+      <button class="ctl main" id="play" type="button" aria-pressed="false">시작</button>
+      <button class="ctl" id="next" type="button">다음</button>
+    </div>
+    <div class="opt-row">
+      <button class="opt" id="rate" type="button"></button>
+      <button class="opt" id="veil" type="button"></button>
+    </div>
+  </div>
+  </div>
+
+  <div class="view" id="listenView" hidden>
+    <div class="cats" id="lcats" role="group" aria-label="듣기 종류"></div>
+    <section class="card">
+      <div class="meta"><span id="lkind"></span><span id="lcount"></span></div>
+      <h1 class="ltitle" id="ltitle" lang="en" hidden></h1>
+      <p class="q" id="lq"></p>
+      <p class="wait" id="lwait">글자를 보지 말고 들어 보세요.<br>끝나면 글과 뜻이 나와요.</p>
+      <div class="script" id="lscript" hidden></div>
+      <p class="ans" id="lans" hidden></p>
+      <p class="cue-text" id="lcue" aria-live="polite"></p>
+      <p class="err" id="lerr" hidden></p>
+    </section>
+    <div class="foot">
+      <div class="play-row">
+        <button class="ctl" id="lprev" type="button">이전</button>
+        <button class="ctl main" id="lplay" type="button" aria-pressed="false">시작</button>
+        <button class="ctl" id="lnext" type="button">다음</button>
+      </div>
+      <div class="opt-row">
+        <button class="opt" id="lrate" type="button"></button>
+        <button class="opt" id="lshow" type="button"></button>
+      </div>
+      <p class="note">듣기 글은 이 앱을 위해 새로 썼어요. 뉴스는 가상 내용이에요.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const SENTENCES = [
+  ["일상", "Could you say that again, please?", "다시 한번 말씀해 주시겠어요?"],
+  ["일상", "Sorry, I didn't catch that.", "죄송해요, 잘 못 들었어요."],
+  ["일상", "What do you mean by that?", "그게 무슨 뜻이에요?"],
+  ["일상", "Give me a second to think.", "잠깐 생각할 시간을 주세요."],
+  ["일상", "I'm still working on my English.", "아직 영어를 배우는 중이에요."],
+  ["일상", "How was your weekend?", "주말 어떻게 보냈어요?"],
+  ["일상", "I've been really busy lately.", "요즘 정말 바빴어요."],
+  ["일상", "That sounds like a great idea.", "정말 좋은 생각 같아요."],
+  ["일상", "Let me check and get back to you.", "확인해 보고 다시 알려 드릴게요."],
+  ["일상", "What do you do for a living?", "무슨 일 하세요?"],
+  ["일상", "I run a camping channel on YouTube.", "유튜브에서 캠핑 채널을 운영해요."],
+  ["캠핑", "We're camping by the lake this weekend.", "이번 주말에 호숫가에서 캠핑해요."],
+  ["캠핑", "Can you help me set up the tent?", "텐트 치는 것 좀 도와줄래요?"],
+  ["캠핑", "It gets really cold here at night.", "여기는 밤에 정말 추워져요."],
+  ["캠핑", "This sleeping bag keeps me warm.", "이 침낭을 쓰면 따뜻해요."],
+  ["캠핑", "I forgot to bring the charcoal.", "숯 가져오는 걸 깜빡했어요."],
+  ["캠핑", "Is it okay to make a fire here?", "여기서 불 피워도 괜찮아요?"],
+  ["캠핑", "The view from this campsite is amazing.", "이 캠핑장 풍경은 정말 멋져요."],
+  ["캠핑", "It's cheap, but it works really well.", "저렴한데 정말 잘 돼요."],
+  ["캠핑", "Let's pack up before it starts to rain.", "비 오기 전에 짐 싸요."],
+  ["캠핑", "I've been using this for five years.", "이거 5년째 쓰고 있어요."],
+  ["편집", "Please cut the first ten seconds.", "처음 10초를 잘라 주세요."],
+  ["편집", "Make the subtitles a little shorter.", "자막을 조금 더 짧게 해 주세요."],
+  ["편집", "Turn the background music down.", "배경음악 소리를 줄여 주세요."],
+  ["편집", "Can you find the best parts for a short?", "숏폼에 쓸 좋은 부분을 찾아 줄래요?"],
+  ["편집", "Please apply the feedback to this video.", "이 영상에 피드백을 반영해 주세요."],
+  ["편집", "Use the same style as last time.", "지난번과 같은 스타일로 해 주세요."],
+  ["편집", "Remove the part where I repeat myself.", "제가 같은 말을 반복한 부분을 지워 주세요."],
+  ["유튜브", "Thanks for watching this video.", "이 영상을 봐 주셔서 감사합니다."],
+  ["유튜브", "Don't forget to subscribe.", "구독 잊지 마세요."],
+].map(([cat, en, ko]) => ({ cat, en, ko }));
+
+const REPEATS = 3;
+const CATS = ["전체", "일상", "캠핑", "편집", "유튜브"];
+const $ = (id) => document.getElementById(id);
+const KEY = "ttara-v1";
+
+let state = { cat: "전체", index: 0, slow: true, veiled: false, mode: "repeat", lCat: "전체", lIndex: 0 };
+try { state = { ...state, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) {}
+if (!CATS.includes(state.cat)) state.cat = "전체";
+
+let run = 0;
+let running = false;
+let wake = null;
+let englishVoice = null;
+const synth = window.speechSynthesis || null;
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+function list() { return state.cat === "전체" ? SENTENCES : SENTENCES.filter((s) => s.cat === state.cat); }
+function current() { const l = list(); state.index = ((state.index % l.length) + l.length) % l.length; return l[state.index]; }
+function rate() { return state.slow ? 0.82 : 1; }
+function live(id) { return id === run; }
+
+function pickVoice() {
+  if (!synth) return;
+  const voices = synth.getVoices().filter((v) => /^en[-_]US/i.test(v.lang));
+  englishVoice = voices.find((v) => /google/i.test(v.name)) || voices[0] || null;
+}
+if (synth) { pickVoice(); synth.addEventListener?.("voiceschanged", pickVoice); }
+
+function setCue(text, speaking) {
+  const c = $("cue");
+  c.textContent = text;
+  c.classList.toggle("speak", !!speaking);
+}
+function setReps(done) {
+  [...$("reps").children].forEach((d, i) => d.classList.toggle("on", i < done));
+}
+function setFill(pct) { $("fill").style.width = pct + "%"; }
+function showError(msg) { const e = $("err"); e.textContent = msg; e.hidden = !msg; }
+
+function render() {
+  const s = current(), l = list();
+  $("en").textContent = s.en;
+  $("ko").textContent = s.ko;
+  $("ko").classList.toggle("veiled", state.veiled);
+  $("count").textContent = (state.index + 1) + " / " + l.length;
+  $("rate").textContent = state.slow ? "속도: 천천히" : "속도: 보통";
+  $("veil").textContent = state.veiled ? "뜻 보기" : "뜻 가리기";
+  [...$("cats").children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cat === state.cat)));
+  const p = $("play");
+  p.textContent = running ? "멈춤" : "시작";
+  p.setAttribute("aria-pressed", String(running));
+  save();
+}
+
+function sleep(ms, id) {
+  return new Promise((resolve) => {
+    const end = performance.now() + ms;
+    const tick = () => (!live(id) || performance.now() >= end) ? resolve() : setTimeout(tick, 40);
+    tick();
+  });
+}
+
+function estimate(text) { return (text.split(/\s+/).length * 380 + 500) / rate(); }
+
+function speak(text, id, opts = {}) {
+  return new Promise((resolve) => {
+    const guess = estimate(text);
+    let started = 0, finished = false;
+    const finish = (ms) => { if (!finished) { finished = true; clearTimeout(guard); resolve(ms); } };
+    // Some Android speech engines never report the end of an utterance.
+    const guard = setTimeout(() => finish(guess), guess * 2.5 + 4000);
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = rate();
+    const chosen = opts.voice || englishVoice;
+    if (chosen) u.voice = chosen;
+    if (opts.pitch) u.pitch = opts.pitch;
+    u.onstart = () => { started = performance.now(); };
+    u.onend = () => {
+      const measured = started ? performance.now() - started : 0;
+      finish(measured > 300 ? measured : guess);
+    };
+    u.onerror = (ev) => {
+      if (live(id) && ev.error !== "canceled" && ev.error !== "interrupted") {
+        showError("영어 음성을 재생하지 못했어요. 휴대폰 설정의 음성 출력(TTS)에서 Google 엔진과 영어 음성이 켜져 있는지 확인해 주세요.");
+        stop();
+      }
+      finish(0);
+    };
+    synth.resume();
+    synth.speak(u);
+  });
+}
+
+async function countdown(ms, id) {
+  const start = performance.now();
+  while (live(id)) {
+    const p = (performance.now() - start) / ms;
+    if (p >= 1) break;
+    setFill((1 - p) * 100);
+    await sleep(40, id);
+  }
+  setFill(0);
+}
+
+async function play() {
+  if (!synth) { showError("이 브라우저는 음성 읽기를 지원하지 않아요. 휴대폰의 Chrome에서 열어 주세요."); return; }
+  showError("");
+  const id = ++run;
+  running = true;
+  render();
+  try { wake = await navigator.wakeLock?.request("screen"); } catch (e) { wake = null; }
+  await sleep(150, id);
+  while (live(id)) {
+    const s = current();
+    for (let r = 0; r < REPEATS && live(id); r++) {
+      setReps(r);
+      setFill(100);
+      setCue("잘 들어 보세요", false);
+      const spoken = await speak(s.en, id);
+      if (!live(id)) return;
+      setCue("이제 따라 말해 보세요", true);
+      await countdown(Math.max(1600, spoken * 1.25 + 600), id);
+      if (!live(id)) return;
+      setReps(r + 1);
+    }
+    await sleep(350, id);
+    if (!live(id)) return;
+    state.index += 1;
+    setReps(0);
+    render();
+  }
+}
+
+function stop() {
+  run++;
+  running = false;
+  if (synth) synth.cancel();
+  try { wake?.release(); } catch (e) {}
+  nowLine = -1;
+  setListenCue(LISTEN_IDLE);
+  renderListen();
+  wake = null;
+  setFill(0);
+  setCue("시작을 누르면 3번씩 들려 드려요", false);
+  render();
+}
+
+function move(delta) {
+  const was = running;
+  stop();
+  state.index += delta;
+  setReps(0);
+  render();
+  if (was) play();
+}
+
+CATS.forEach((cat) => {
+  const b = document.createElement("button");
+  b.className = "cat"; b.type = "button"; b.textContent = cat; b.dataset.cat = cat;
+  b.addEventListener("click", () => { stop(); state.cat = cat; state.index = 0; setReps(0); render(); });
+  $("cats").appendChild(b);
+});
+for (let i = 0; i < REPEATS; i++) { const d = document.createElement("span"); d.className = "rep"; $("reps").appendChild(d); }
+
+$("play").addEventListener("click", () => running ? stop() : play());
+$("prev").addEventListener("click", () => move(-1));
+$("next").addEventListener("click", () => move(1));
+$("rate").addEventListener("click", () => { state.slow = !state.slow; render(); });
+$("veil").addEventListener("click", () => { state.veiled = !state.veiled; render(); });
+$("ko").addEventListener("click", () => { if (state.veiled) { state.veiled = false; render(); } });
+const n = (en, ko) => ["", en, ko];
+const LISTENS = [
+  { cat: "뉴스", title: "Rain Closes Campsites", q: "캠핑장은 언제 다시 문을 열까요?", a: "월요일", lines: [
+    n("Heavy rain closed three mountain campsites on Friday.", "금요일에 폭우로 산속 캠핑장 세 곳이 문을 닫았습니다."),
+    n("Park officials say the roads are not safe right now.", "공원 관계자는 지금 도로가 안전하지 않다고 말합니다."),
+    n("No one was hurt, but some tents were damaged.", "다친 사람은 없지만 텐트 일부가 망가졌습니다."),
+    n("The campsites plan to open again on Monday.", "캠핑장들은 월요일에 다시 문을 열 계획입니다."),
+    n("Visitors can get a full refund.", "방문객은 전액 환불받을 수 있습니다."),
+  ] },
+  { cat: "뉴스", title: "A Library That Lends Tents", q: "장비는 며칠 동안 빌릴 수 있나요?", a: "7일", lines: [
+    n("A small town library now lends camping gear.", "한 소도시 도서관이 이제 캠핑 장비를 빌려줍니다."),
+    n("People can borrow tents and stoves for free.", "사람들은 텐트와 버너를 무료로 빌릴 수 있습니다."),
+    n("Each item can be kept for seven days.", "각 물품은 7일 동안 가지고 있을 수 있습니다."),
+    n("The library says families are its biggest users.", "도서관은 가족 단위가 가장 많이 이용한다고 말합니다."),
+    n("Next year, it hopes to add bicycles.", "내년에는 자전거도 추가하고 싶어 합니다."),
+  ] },
+  { cat: "뉴스", title: "Grandmother's Kitchen Goes Viral", q: "영상은 무엇으로 찍었나요?", a: "오래된 휴대폰", lines: [
+    n("A high school student made a video of her grandmother cooking.", "한 고등학생이 할머니의 요리 영상을 만들었습니다."),
+    n("It reached one million views in a week.", "영상은 일주일 만에 조회수 백만 회를 넘었습니다."),
+    n("She filmed it on an old phone.", "학생은 오래된 휴대폰으로 촬영했습니다."),
+    n("She says she only wanted to save the family recipes.", "그저 집안 요리법을 남기고 싶었다고 말합니다."),
+    n("Now she is writing a short cookbook.", "지금은 짧은 요리책을 쓰고 있습니다."),
+  ] },
+  { cat: "뉴스", title: "Night Buses Are Coming", q: "새 버스는 몇 시까지 운행하나요?", a: "새벽 2시", lines: [
+    n("The city will add night buses starting next month.", "시는 다음 달부터 심야 버스를 추가합니다."),
+    n("The new buses will run until two in the morning.", "새 버스는 새벽 2시까지 운행합니다."),
+    n("A ticket will cost the same as a day ticket.", "요금은 낮 시간 요금과 같습니다."),
+    n("Many restaurant workers asked for the change.", "많은 식당 직원들이 이 변화를 요청했습니다."),
+    n("City leaders will review the plan after six months.", "시 지도부는 6개월 뒤 계획을 다시 검토합니다."),
+  ] },
+  { cat: "연설", title: "Start Before You Are Ready", q: "첫 영상을 본 사람은 몇 명이었나요?", a: "11명", lines: [
+    n("When I made my first video, I was terrified.", "첫 영상을 만들 때 저는 무척 겁이 났습니다."),
+    n("The sound was bad and my hands were shaking.", "소리는 엉망이었고 손은 떨렸습니다."),
+    n("Only eleven people watched it.", "본 사람은 겨우 열한 명이었습니다."),
+    n("But one of them left a kind comment.", "하지만 그중 한 분이 따뜻한 댓글을 남겼습니다."),
+    n("That comment kept me going for a whole year.", "그 댓글 덕분에 꼬박 일 년을 계속할 수 있었습니다."),
+    n("So please, start before you feel ready.", "그러니 준비됐다고 느끼기 전에 시작하세요."),
+  ] },
+  { cat: "연설", title: "Small, Boring Days", q: "매일 하라고 한 시간은 얼마인가요?", a: "10분", lines: [
+    n("Nobody gets better in one big day.", "하루 만에 크게 나아지는 사람은 없습니다."),
+    n("You get better on small, boring days.", "작고 지루한 날들 속에서 나아집니다."),
+    n("Ten minutes is not much.", "10분은 긴 시간이 아닙니다."),
+    n("But ten minutes every day is a lot.", "하지만 매일 10분은 큰 시간입니다."),
+    n("Do something small today, and do it again tomorrow.", "오늘 작은 일을 하고, 내일 또 하세요."),
+  ] },
+  { cat: "연설", title: "Stop Trying to Be Perfect", q: "여행자는 몇 개 언어를 했나요?", a: "3개", lines: [
+    n("I used to be afraid of speaking English.", "저는 영어로 말하는 게 두려웠습니다."),
+    n("I thought people would laugh at my mistakes.", "사람들이 제 실수를 비웃을 거라고 생각했습니다."),
+    n("Then I met a traveler who spoke three languages badly.", "그러다 세 언어를 서툴게 하는 여행자를 만났습니다."),
+    n("She had friends all over the world.", "그녀는 전 세계에 친구가 있었습니다."),
+    n("That day, I stopped trying to be perfect.", "그날 저는 완벽하려는 노력을 그만두었습니다."),
+  ] },
+  { cat: "연설", title: "Go Outside", q: "휴대폰을 얼마 동안 가방에 넣어 두라고 했나요?", a: "1시간", lines: [
+    n("Go outside this weekend.", "이번 주말에 밖으로 나가세요."),
+    n("Leave your phone in your bag for one hour.", "한 시간 동안 휴대폰을 가방에 넣어 두세요."),
+    n("Listen to the wind and look at the trees.", "바람 소리를 듣고 나무를 바라보세요."),
+    n("You will not solve every problem.", "모든 문제가 해결되지는 않을 겁니다."),
+    n("But you will remember how to breathe.", "하지만 숨 쉬는 법은 다시 기억날 겁니다."),
+  ] },
+  { cat: "대화", title: "Checking In at a Campsite", q: "온수는 몇 시까지 나오나요?", a: "10시", lines: [
+    ["A", "Hi, I have a reservation for tonight.", "안녕하세요, 오늘 밤 예약했어요."],
+    ["B", "Great. What's your name?", "좋아요. 성함이 어떻게 되세요?"],
+    ["A", "It's Min. I booked a site near the river.", "민이에요. 강 근처 자리로 예약했어요."],
+    ["B", "Okay, you're at site twelve.", "네, 12번 자리입니다."],
+    ["A", "Is there hot water?", "온수 나오나요?"],
+    ["B", "Yes, but only until ten o'clock.", "네, 하지만 10시까지만요."],
+  ] },
+  { cat: "대화", title: "Ordering Coffee", q: "손님은 결국 어떤 크기를 골랐나요?", a: "큰 사이즈", lines: [
+    ["A", "Can I get an iced coffee, please?", "아이스커피 한 잔 주시겠어요?"],
+    ["B", "Sure. What size?", "네. 어떤 크기로 드릴까요?"],
+    ["A", "Medium. Actually, make it a large.", "중간이요. 아니, 큰 걸로 할게요."],
+    ["B", "Anything else?", "더 필요한 건 없으세요?"],
+    ["A", "No, that's all. Thanks.", "아뇨, 그게 다예요. 감사합니다."],
+    ["B", "That'll be five dollars.", "5달러입니다."],
+  ] },
+  { cat: "대화", title: "Feedback on a Video", q: "엔딩을 얼마나 줄이라고 했나요?", a: "30초 정도", lines: [
+    ["A", "Did you watch my new video?", "내 새 영상 봤어?"],
+    ["B", "I did. The first minute was great.", "봤어. 처음 1분이 정말 좋았어."],
+    ["A", "What about the ending?", "엔딩은 어땠어?"],
+    ["B", "It felt a little long.", "조금 길게 느껴졌어."],
+    ["A", "Should I cut it?", "잘라야 할까?"],
+    ["B", "Yes, maybe by thirty seconds.", "응, 30초 정도."],
+  ] },
+  { cat: "대화", title: "Making Weekend Plans", q: "두 사람은 몇 시에 만나나요?", a: "오후 2시", lines: [
+    ["A", "Are you free on Saturday?", "토요일에 시간 있어?"],
+    ["B", "Not in the morning, but the afternoon is fine.", "오전은 안 되는데 오후는 괜찮아."],
+    ["A", "Do you want to go hiking?", "등산 갈래?"],
+    ["B", "Sure. Where should we meet?", "좋아. 어디서 만날까?"],
+    ["A", "Let's meet at the station at two.", "2시에 역에서 만나자."],
+    ["B", "Perfect. See you then.", "좋아. 그때 봐."],
+  ] },
+];
+const LCATS = ["전체", "뉴스", "연설", "대화"];
+const LISTEN_IDLE = "시작을 누르면 글자 없이 2번 들려 드려요";
+if (!LCATS.includes(state.lCat)) state.lCat = "전체";
+let revealed = false;
+var nowLine = -1;
+
+function listenItems() { return state.lCat === "전체" ? LISTENS : LISTENS.filter((x) => x.cat === state.lCat); }
+function currentListen() { const l = listenItems(); state.lIndex = ((state.lIndex % l.length) + l.length) % l.length; return l[state.lIndex]; }
+function setListenCue(text) { $("lcue").textContent = text; }
+function markLine(i) {
+  nowLine = i;
+  [...$("lscript").children].forEach((el, k) => el.classList.toggle("now", k === i));
+}
+function voiceFor(who) {
+  if (who === "A") return { pitch: 0.92 };
+  if (who !== "B") return {};
+  const other = synth ? synth.getVoices().find((v) => /^en[-_]US/i.test(v.lang) && v !== englishVoice) : null;
+  return { pitch: 1.18, voice: other || undefined };
+}
+function renderListen() {
+  const s = currentListen();
+  $("lkind").textContent = s.cat;
+  $("lcount").textContent = (state.lIndex + 1) + " / " + listenItems().length;
+  $("lq").textContent = s.q;
+  $("ltitle").textContent = s.title;
+  $("ltitle").hidden = !revealed;
+  $("lwait").hidden = revealed;
+  $("lscript").hidden = !revealed;
+  $("lans").hidden = !revealed;
+  $("lans").textContent = "답: " + s.a;
+  const box = $("lscript");
+  box.replaceChildren();
+  s.lines.forEach(([who, en, ko], i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "line" + (i === nowLine ? " now" : "");
+    const eng = document.createElement("span");
+    eng.className = "line-en"; eng.lang = "en"; eng.textContent = (who ? who + ": " : "") + en;
+    const kor = document.createElement("span");
+    kor.className = "line-ko"; kor.textContent = ko;
+    b.append(eng, kor);
+    b.addEventListener("click", () => sayLine(i));
+    box.appendChild(b);
+  });
+  [...$("lcats").children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cat === state.lCat)));
+  $("lplay").textContent = running ? "멈춤" : "시작";
+  $("lplay").setAttribute("aria-pressed", String(running));
+  $("lrate").textContent = state.slow ? "속도: 천천히" : "속도: 보통";
+  $("lshow").textContent = revealed ? "글자 숨기기" : "글자 보기";
+  $("repeatView").hidden = state.mode !== "repeat";
+  $("listenView").hidden = state.mode !== "listen";
+  $("modeRepeat").setAttribute("aria-pressed", String(state.mode === "repeat"));
+  $("modeListen").setAttribute("aria-pressed", String(state.mode === "listen"));
+  save();
+}
+async function speakAll(item, id, show) {
+  for (let i = 0; i < item.lines.length && live(id); i++) {
+    if (show) markLine(i);
+    await speak(item.lines[i][1], id, voiceFor(item.lines[i][0]));
+    if (!live(id)) return;
+    await sleep(280, id);
+  }
+  if (live(id)) markLine(-1);
+}
+async function playListen() {
+  if (!synth) { $("lerr").textContent = "이 브라우저는 음성 읽기를 지원하지 않아요. 휴대폰의 Chrome에서 열어 주세요."; $("lerr").hidden = false; return; }
+  $("lerr").hidden = true;
+  const id = ++run;
+  running = true;
+  revealed = false;
+  nowLine = -1;
+  renderListen();
+  try { wake = await navigator.wakeLock?.request("screen"); } catch (e) { wake = null; }
+  await sleep(150, id);
+  const item = currentListen();
+  for (let round = 1; round <= 2 && live(id); round++) {
+    setListenCue("글자 없이 듣기 " + round + " / 2");
+    await speakAll(item, id, false);
+    if (!live(id)) return;
+    await sleep(1200, id);
+  }
+  if (!live(id)) return;
+  revealed = true;
+  renderListen();
+  setListenCue("글을 보며 듣기");
+  await speakAll(item, id, true);
+  if (!live(id)) return;
+  stop();
+  setListenCue("문장을 누르면 다시 들을 수 있어요");
+}
+async function sayLine(i) {
+  stop();
+  const id = ++run;
+  const line = currentListen().lines[i];
+  markLine(i);
+  await sleep(150, id);
+  if (!live(id)) return;
+  await speak(line[1], id, voiceFor(line[0]));
+  if (live(id)) markLine(-1);
+}
+function moveListen(delta) {
+  stop();
+  state.lIndex += delta;
+  revealed = false;
+  renderListen();
+}
+function setMode(mode) { stop(); state.mode = mode; render(); renderListen(); }
+
+LCATS.forEach((cat) => {
+  const b = document.createElement("button");
+  b.className = "cat"; b.type = "button"; b.textContent = cat; b.dataset.cat = cat;
+  b.addEventListener("click", () => { stop(); state.lCat = cat; state.lIndex = 0; revealed = false; renderListen(); });
+  $("lcats").appendChild(b);
+});
+$("modeRepeat").addEventListener("click", () => setMode("repeat"));
+$("modeListen").addEventListener("click", () => setMode("listen"));
+$("lplay").addEventListener("click", () => running ? stop() : playListen());
+$("lprev").addEventListener("click", () => moveListen(-1));
+$("lnext").addEventListener("click", () => moveListen(1));
+$("lrate").addEventListener("click", () => { state.slow = !state.slow; render(); renderListen(); });
+$("lshow").addEventListener("click", () => { revealed = !revealed; nowLine = -1; renderListen(); });
+setListenCue(LISTEN_IDLE);
+renderListen();
+
+document.addEventListener("visibilitychange", () => { if (document.hidden && running) stop(); });
+
+setCue("시작을 누르면 3번씩 들려 드려요", false);
+render();
+</script>

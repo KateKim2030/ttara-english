@@ -1,0 +1,196 @@
+<title>따라말하기 영어</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Jua&family=IBM+Plex+Sans+KR:wght@500&family=JetBrains+Mono:wght@700&display=swap">
+<style>
+/* One look on purpose: a printed sticker book. Tilted comic stage on top, words in the middle, chunky keys in thumb reach. */
+:root {
+  --paper: #ece6dc; --dots: rgba(23, 19, 15, .13); --ink: #17130f; --soft: #5d5346; --dim: #aba192;
+  --white: #fffdf7; --yellow: #ffce3a; --pink: #ff5c8a; --pine: #1e6a4c;
+  --en: "Bricolage Grotesque", "Segoe UI", Roboto, sans-serif;
+  --fun: "Jua", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --ko: "IBM Plex Sans KR", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --mono: "JetBrains Mono", Consolas, monospace;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; } /* .view and .script set display, which would otherwise beat the hidden attribute. */
+html, body { height: 100%; }
+body {
+  color: var(--ink); font-family: var(--ko); transition: background-color .25s;
+  background-color: var(--paper);
+  background-image: radial-gradient(var(--dots) 1.3px, transparent 1.6px);
+  background-size: 20px 20px;
+}
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
+
+.app {
+  height: 100%; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px;
+  padding-block: 10px 14px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mode, .cat, .ctl, .opt {
+  border: 3px solid var(--ink); background: var(--white); font-family: var(--fun);
+  box-shadow: 3px 3px 0 var(--ink); transition: transform .08s, box-shadow .08s;
+}
+.mode:active, .cat:active, .ctl:active, .opt:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--ink); }
+.mode { min-height: 44px; border-radius: 12px; font-size: 18px; }
+.mode[aria-pressed="true"] { background: var(--ink); color: var(--white); }
+.view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
+/* More topics than fit on a phone: the row slides sideways, and the cut-off last button hints at it. */
+.cats { flex: none; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 3px 3px 0; overscroll-behavior-x: contain; }
+.cats::-webkit-scrollbar { display: none; }
+.cat { flex: 1 0 auto; min-width: 54px; min-height: 38px; padding: 0 10px; border-width: 2px; border-radius: 10px; box-shadow: 2px 2px 0 var(--ink); font-size: 15px; white-space: nowrap; }
+.cat[aria-pressed="true"] { background: var(--yellow); }
+
+.stage { position: relative; flex: none; align-self: center; width: min(calc(100% - 10px), 54dvh); aspect-ratio: 400 / 190; margin: 6px 6px 16px 4px; transform: rotate(-1.3deg); transition: width .3s; }
+.stage.compact { align-self: flex-start; width: min(46%, 26dvh); margin-bottom: 4px; }
+.stage.compact .count, .stage.compact .tag, .stage.compact .sticker { display: none; }
+.art { position: absolute; inset: 0; overflow: hidden; border: 4px solid var(--ink); border-radius: 18px; box-shadow: 7px 7px 0 var(--ink); background: var(--white); }
+.art svg { display: block; width: 100%; height: 100%; }
+.sticker {
+  position: absolute; top: -9px; left: -3px; padding: 4px 11px; border: 3px solid var(--ink); border-radius: 9px;
+  background: var(--pink); font-family: var(--fun); font-size: 17px; transform: rotate(-4deg); box-shadow: 3px 3px 0 var(--ink);
+  animation: pop .26s cubic-bezier(.3, 1.7, .5, 1);
+}
+.stage[data-phase="turn"] .sticker { background: var(--yellow); }
+.count { position: absolute; bottom: -10px; right: 14px; padding: 3px 8px; border-radius: 6px; background: var(--ink); color: var(--white); font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; }
+.tag { position: absolute; left: 12px; bottom: -13px; padding: 3px 11px; border: 3px solid var(--ink); border-radius: 7px; background: var(--white); font-family: var(--fun); font-size: 16px; transform: rotate(1.6deg); box-shadow: 3px 3px 0 var(--ink); }
+
+.waves path { fill: none; stroke: var(--white); stroke-width: 5; stroke-linecap: round; opacity: .25; }
+.stage[data-phase="listen"] .waves path { animation: wave 1s infinite; }
+.stage[data-phase="listen"] .waves path:nth-child(2) { animation-delay: .14s; }
+.stage[data-phase="listen"] .waves path:nth-child(3) { animation-delay: .28s; }
+.stage[data-phase="turn"] .bob { animation: bob .55s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+.flame { animation: flick .5s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: 50% 100%; }
+.twinkle { animation: tw 1.6s ease-in-out infinite alternate; }
+.head { animation: slide 3.4s linear infinite; }
+@keyframes wave { 0%, 100% { opacity: .25; } 45% { opacity: 1; } }
+@keyframes bob { to { transform: translateY(-5px) rotate(1.5deg); } }
+@keyframes flick { to { transform: scaleY(1.2) scaleX(.9); } }
+@keyframes tw { to { opacity: .25; } }
+@keyframes slide { from { transform: translateX(0); } to { transform: translateX(150px); } }
+@keyframes pop { from { transform: rotate(-4deg) scale(.5); } }
+
+.card { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.text { margin-block: auto; display: flex; flex-direction: column; gap: 6px; }
+.en { margin: 0; font-family: var(--en); font-weight: 800; font-size: clamp(27px, 7.8vw, 40px); line-height: 1.18; letter-spacing: -.01em; overflow-wrap: anywhere; }
+.w { border-radius: 6px; transition: color .08s; }
+.w.todo { color: var(--dim); }
+.w.cur { background: var(--yellow); box-shadow: 0 0 0 3px var(--yellow); }
+.ko { margin: 0; color: var(--soft); font-size: 17px; line-height: 1.45; }
+.ko.veiled { filter: blur(8px); user-select: none; }
+.cue-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.cue-text { margin: 0; font-family: var(--fun); font-size: 18px; color: var(--pine); }
+.cue-text.speak { color: var(--ink); }
+.reps { display: flex; gap: 6px; flex: none; }
+.rep { width: 15px; height: 15px; border-radius: 50%; border: 3px solid var(--ink); background: var(--white); }
+.rep.on { background: var(--pink); }
+.track { flex: none; height: 12px; border: 3px solid var(--ink); border-radius: 7px; background: var(--white); overflow: hidden; }
+.fill { height: 100%; width: 0; background: var(--yellow); }
+.err { margin: 0; color: #a3210f; font-size: 14px; line-height: 1.45; }
+
+.foot { flex: none; display: flex; flex-direction: column; gap: 9px; }
+.play-row { display: grid; grid-template-columns: 1fr 1.7fr 1fr; gap: 9px; }
+.ctl { min-height: 62px; border-radius: 15px; font-size: 19px; box-shadow: 4px 4px 0 var(--ink); }
+.main { background: var(--yellow); font-size: 25px; }
+.main[aria-pressed="true"] { background: var(--pink); }
+.opt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.opt { min-height: 42px; border-width: 2px; border-radius: 10px; box-shadow: 2px 2px 0 var(--ink); font-size: 15px; }
+.note { margin: 0; color: var(--soft); font-size: 12px; text-align: center; }
+
+.ltitle { margin: 0; font-family: var(--en); font-size: 23px; line-height: 1.15; }
+.q { margin: 0; font-family: var(--fun); font-size: 19px; line-height: 1.4; }
+.wait { margin: auto 0; text-align: center; color: var(--soft); font-size: 16px; line-height: 1.6; }
+.script { display: flex; flex-direction: column; gap: 2px; }
+.line { display: block; width: 100%; padding: 6px 8px; border: 0; border-radius: 9px; background: transparent; text-align: left; }
+.line-en { display: block; font-family: var(--en); font-size: 19px; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.line-ko { display: block; margin-top: 2px; font-size: 14px; line-height: 1.4; color: var(--soft); }
+.line.now { background: var(--yellow); }
+.line.now .line-ko { color: var(--ink); }
+.ans { margin: 0; color: var(--pine); font-family: var(--fun); font-size: 17px; }
+/* Short screens: the sentence outranks the picture. */
+@media (max-height: 680px) {
+  .app, .view { gap: 7px; }
+  .stage { width: min(calc(100% - 10px), 38dvh); margin-bottom: 14px; }
+  .stage.compact, .note { display: none; }
+  .en { font-size: clamp(23px, 6.6vw, 30px); }
+  .ctl { min-height: 52px; }
+  .opt { min-height: 38px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } .waves path { opacity: .8; } }
+</style>
+
+<main class="app">
+  <div class="modes" role="group" aria-label="연습 종류">
+    <button class="mode" id="modeRepeat" type="button">따라 말하기</button>
+    <button class="mode" id="modeListen" type="button">듣기</button>
+  </div>
+
+  <div class="view" id="repeatView">
+    <div class="cats" id="cats" role="group" aria-label="문장 종류"></div>
+    <div class="stage" id="stage" data-phase="idle">
+      <div class="art" id="scene" aria-hidden="true"></div>
+      <span class="sticker" id="sticker" hidden></span>
+      <span class="count" id="count"></span>
+      <span class="tag" id="tag"></span>
+    </div>
+    <section class="card">
+      <div class="text">
+        <p class="en" id="en" lang="en"></p>
+        <p class="ko" id="ko"></p>
+      </div>
+      <p class="err" id="err" hidden></p>
+    </section>
+    <div class="cue-row">
+      <p class="cue-text" id="cue" aria-live="polite"></p>
+      <span class="reps" id="reps" aria-label="반복 횟수"></span>
+    </div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+    <div class="foot">
+      <div class="play-row">
+        <button class="ctl" id="prev" type="button">이전</button>
+        <button class="ctl main" id="play" type="button" aria-pressed="false">시작</button>
+        <button class="ctl" id="next" type="button">다음</button>
+      </div>
+      <div class="opt-row">
+        <button class="opt" id="rate" type="button"></button>
+        <button class="opt" id="veil" type="button"></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="listenView" hidden>
+    <div class="cats" id="lcats" role="group" aria-label="듣기 종류"></div>
+    <div class="stage" id="lstage" data-phase="idle">
+      <div class="art" id="lscene" aria-hidden="true"></div>
+      <span class="sticker" id="lsticker" hidden></span>
+      <span class="count" id="lcount"></span>
+      <span class="tag" id="lkind"></span>
+    </div>
+    <section class="card">
+      <h1 class="ltitle" id="ltitle" lang="en" hidden></h1>
+      <p class="q" id="lq"></p>
+      <p class="wait" id="lwait">글자를 보지 말고 들어 보세요.<br>끝나면 글과 뜻이 나와요.</p>
+      <div class="script" id="lscript" hidden></div>
+      <p class="ans" id="lans" hidden></p>
+      <p class="err" id="lerr" hidden></p>
+    </section>
+    <p class="cue-text" id="lcue" aria-live="polite"></p>
+    <div class="foot">
+      <div class="play-row">
+        <button class="ctl" id="lprev" type="button">이전</button>
+        <button class="ctl main" id="lplay" type="button" aria-pressed="false">시작</button>
+        <button class="ctl" id="lnext" type="button">다음</button>
+      </div>
+      <div class="opt-row">
+        <button class="opt" id="lrate" type="button"></button>
+        <button class="opt" id="lshow" type="button"></button>
+      </div>
+      <p class="note">듣기 글은 이 앱을 위해 새로 썼어요. 뉴스는 가상 내용이에요.</p>
+    </div>
+  </div>
+</main>

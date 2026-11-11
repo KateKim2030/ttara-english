@@ -54,8 +54,10 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 .mode { min-height: 44px; border-radius: 12px; font-size: 18px; }
 .mode[aria-pressed="true"] { background: var(--ink); color: var(--white); }
 .view { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
-.cats { display: flex; gap: 6px; }
-.cat { flex: 1 1 0; min-width: 0; min-height: 38px; padding: 0 2px; border-width: 2px; border-radius: 10px; box-shadow: 2px 2px 0 var(--ink); font-size: 15px; white-space: nowrap; }
+/* More topics than fit on a phone: the row slides sideways, and the cut-off last button hints at it. */
+.cats { flex: none; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 0 3px 3px 0; overscroll-behavior-x: contain; }
+.cats::-webkit-scrollbar { display: none; }
+.cat { flex: 1 0 auto; min-width: 54px; min-height: 38px; padding: 0 10px; border-width: 2px; border-radius: 10px; box-shadow: 2px 2px 0 var(--ink); font-size: 15px; white-space: nowrap; }
 .cat[aria-pressed="true"] { background: var(--yellow); }
 
 .stage { position: relative; flex: none; align-self: center; width: min(calc(100% - 10px), 54dvh); aspect-ratio: 400 / 190; margin: 6px 6px 16px 4px; transform: rotate(-1.3deg); transition: width .3s; }
@@ -209,6 +211,46 @@ button:focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
 
 <script>
 const SENTENCES = [
+  ["가족", "Good morning! Did you sleep well?", "좋은 아침! 잘 잤어?"],
+  ["가족", "Breakfast is ready.", "아침 준비됐어."],
+  ["가족", "Hurry up, or you'll be late.", "서둘러, 안 그러면 늦어."],
+  ["가족", "Did you finish your homework?", "숙제 다 했어?"],
+  ["가족", "How was school today?", "오늘 학교 어땠어?"],
+  ["가족", "Can you help me with the dishes?", "설거지 좀 도와줄래?"],
+  ["가족", "Dinner is ready!", "저녁 다 됐어!"],
+  ["가족", "Let's watch a movie together.", "같이 영화 보자."],
+  ["가족", "Don't forget to brush your teeth.", "양치하는 거 잊지 마."],
+  ["가족", "I'm so proud of you.", "네가 정말 자랑스러워."],
+  ["가족", "Thank you for helping me.", "도와줘서 고마워."],
+  ["가족", "Good night. Sleep tight.", "잘 자. 푹 자."],
+  ["리액션", "That's amazing!", "정말 멋지다!"],
+  ["리액션", "No way!", "말도 안 돼!"],
+  ["리액션", "Really? Tell me more.", "정말? 더 얘기해 줘."],
+  ["리액션", "That makes sense.", "그거 말 되네."],
+  ["리액션", "I know, right?", "그러니까 말이야!"],
+  ["리액션", "Good for you!", "잘됐다!"],
+  ["리액션", "Oh no, that's too bad.", "아이고, 안됐다."],
+  ["리액션", "Me too.", "나도."],
+  ["리액션", "What about you?", "너는 어때?"],
+  ["리액션", "Sounds good to me.", "난 좋아."],
+  ["여행", "A table for three, please.", "세 명 자리 부탁해요."],
+  ["여행", "Can I see the menu, please?", "메뉴 좀 볼 수 있을까요?"],
+  ["여행", "I'll have this one, please.", "이걸로 할게요."],
+  ["여행", "I'm allergic to nuts.", "저는 견과류 알레르기가 있어요."],
+  ["여행", "Can I try this on?", "이거 입어 봐도 돼요?"],
+  ["여행", "Do you have this in a smaller size?", "이거 더 작은 사이즈 있나요?"],
+  ["여행", "I don't feel well.", "몸이 안 좋아요."],
+  ["여행", "Where is the nearest pharmacy?", "가장 가까운 약국이 어디예요?"],
+  ["유튜브", "Hi everyone, welcome back to my channel.", "여러분 안녕하세요, 제 채널에 다시 오신 걸 환영해요."],
+  ["유튜브", "Today I'm going to show you my favorite camping gear.", "오늘은 제가 제일 좋아하는 캠핑 장비를 보여 드릴게요."],
+  ["유튜브", "Let me show you how it works.", "어떻게 작동하는지 보여 드릴게요."],
+  ["유튜브", "This is my favorite part.", "이게 제가 제일 좋아하는 부분이에요."],
+  ["유튜브", "It's really easy to set up.", "설치가 정말 쉬워요."],
+  ["유튜브", "It's light and easy to carry.", "가볍고 들고 다니기 편해요."],
+  ["유튜브", "I'll put the link in the description.", "링크는 설명란에 넣어 둘게요."],
+  ["유튜브", "Let me know in the comments.", "댓글로 알려 주세요."],
+  ["유튜브", "See you in the next video.", "다음 영상에서 만나요."],
+  ["유튜브", "Have a great day!", "좋은 하루 보내세요!"],
   ["일상", "Could you say that again, please?", "다시 한번 말씀해 주시겠어요?"],
   ["일상", "Sorry, I didn't catch that.", "죄송해요, 잘 못 들었어요."],
   ["일상", "What do you mean by that?", "그게 무슨 뜻이에요?"],
@@ -258,7 +300,7 @@ const SENTENCES = [
 ].map(([cat, en, ko]) => ({ cat, en, ko }));
 
 const REPEATS = 3;
-const CATS = ["전체", "일상", "여행", "캠핑", "편집", "유튜브"];
+const CATS = ["전체", "가족", "리액션", "일상", "여행", "캠핑", "편집", "유튜브"];
 const $ = (id) => document.getElementById(id);
 const KEY = "ttara-v1";
 
@@ -273,8 +315,45 @@ const hats = {
 const camper = (x, shirt, skin, hat, hatColor, s = 1) => `<g transform="translate(${x} ${190 - 190 * s}) scale(${s})"><g class="bob"><path d="M-60 194c0-46 27-66 60-66s60 20 60 66z" fill="${shirt}" ${S_INK}/><rect x="-13" y="106" width="26" height="29" fill="${skin}" ${S_INK}/><circle cy="84" r="37" fill="${skin}" ${S_INK}/>${hats[hat](hatColor)}</g></g>`;
 const waves = (x, y, flip = 1) => `<g class="waves" transform="translate(${x} ${y}) scale(${flip} 1)"><path d="M0-14c9 8 9 20 0 28"/><path d="M15-25c16 14 16 36 0 50"/><path d="M30-36c23 20 23 52 0 72"/></g>`;
 const bubble = (x, y, text, fill = "#fffdf7") => `<g transform="translate(${x} ${y})"><path d="M-46-24h92a10 10 0 0 1 10 10v26a10 10 0 0 1-10 10h-66l-16 16 2-16h-12a10 10 0 0 1-10-10v-26a10 10 0 0 1 10-10z" fill="${fill}" ${S_INK}/><text y="7" text-anchor="middle" font-family="Bricolage Grotesque, Segoe UI, sans-serif" font-weight="800" font-size="24" fill="#17130f">${text}</text></g>`;
+const burst = (cx, cy, R, r, n, fill) => {
+  let d = "";
+  for (let i = 0; i < n * 2; i++) {
+    const a = Math.PI * i / n - Math.PI / 2, k = i % 2 ? r : R;
+    d += (i ? "L" : "M") + (cx + k * Math.cos(a)).toFixed(1) + " " + (cy + k * Math.sin(a)).toFixed(1);
+  }
+  return `<path d="${d}z" fill="${fill}" ${S_INK}/>`;
+};
+const BIG_TEXT = 'text-anchor="middle" font-family="Bricolage Grotesque, Segoe UI, sans-serif" font-weight="800" fill="#17130f"';
 
 const SCENES = {
+  family: { paper: "#fbeedd", art: () => svg("#ffa94d", `
+    <rect x="150" y="14" width="100" height="60" rx="5" fill="#fffdf7" ${S_INK}/><path d="M162 64l24-26 16 16 12-10 24 20z" fill="#12a58c" ${S_INK}/><circle cx="230" cy="32" r="7" fill="#ffce3a" ${S_INK}/>
+    ${camper(80, "#2b62f6", "#f1c6a2", "hair", "#4a2c17", .8)}${camper(320, "#12a58c", "#d9a06f", "beanie", "#ff5c8a", .8)}${camper(200, "#ff5c8a", "#e7b48c", "bun", "#2b1a10", .58)}
+    <rect x="-6" y="150" width="412" height="46" fill="#7a4221" ${S_INK}/>
+    <path d="M106 136h40a20 14 0 0 1-40 0z" fill="#fffdf7" ${S_INK}/><path d="M254 136h40a20 14 0 0 1-40 0z" fill="#fffdf7" ${S_INK}/>
+    ${waves(134, 88)}`) },
+  react: { paper: "#fbe3e0", art: () => svg("#ff6b5c", `
+    <rect x="0" y="164" width="400" height="28" fill="#ffce3a" ${S_INK}/>
+    ${burst(300, 78, 66, 48, 12, "#fffdf7")}<text x="300" y="88" ${BIG_TEXT} font-size="25">WOW!</text>
+    <path d="M30 28l10 46h10l10-46z" fill="#fffdf7" ${S_INK}/><circle cx="45" cy="90" r="7" fill="#fffdf7" ${S_INK}/>
+    ${camper(120, "#2b62f6", "#f1c6a2", "bucket", "#ffce3a", .92)}${waves(178, 100)}`) },
+  story: { paper: "#e4e0f4", art: () => svg("#3b2a6e", `
+    <path d="M352 22a24 24 0 1 0 14 40 20 20 0 1 1-14-40z" fill="#fff3c4" ${S_INK}/>
+    <g fill="#fff3c4"><circle class="twinkle" cx="60" cy="34" r="4"/><circle cx="250" cy="24" r="3"/><circle class="twinkle" cx="300" cy="66" r="4"/><circle cx="28" cy="96" r="3"/></g>
+    <rect x="0" y="164" width="400" height="28" fill="#2f7d52" ${S_INK}/>
+    <circle cx="310" cy="126" r="36" fill="#ffce3a" opacity=".3"/><path d="M298 104a12 12 0 0 1 24 0" fill="none" ${S_INK}/><rect x="298" y="106" width="24" height="34" rx="5" fill="#ffce3a" ${S_INK}/><rect x="292" y="140" width="36" height="12" rx="3" fill="#7a4221" ${S_INK}/>
+    ${camper(150, "#ff5c8a", "#e7b48c", "bun", "#2b1a10", .82)}
+    <path d="M96 140 150 150v36l-54-10z" fill="#fffdf7" ${S_INK}/><path d="M204 140 150 150v36l54-10z" fill="#fffdf7" ${S_INK}/>
+    <g fill="#ffce3a"><circle class="twinkle" cx="86" cy="124" r="4"/><circle class="twinkle" cx="220" cy="136" r="3.5"/></g>
+    ${waves(214, 90)}`) },
+  gear: { paper: "#f1e6d8", art: () => svg("#c98b4f", `
+    <rect x="0" y="176" width="400" height="16" fill="#2f7d52" ${S_INK}/>
+    <path d="M182 140v50M374 140v50" fill="none" ${S_INK}/><rect x="164" y="128" width="230" height="14" fill="#7a4221" ${S_INK}/>
+    <circle cx="222" cy="100" r="30" fill="#fff3c4" opacity=".45"/><path d="M210 72a12 12 0 0 1 24 0" fill="none" ${S_INK}/><rect x="206" y="72" width="32" height="10" rx="3" fill="#17130f"/>
+    <rect x="210" y="82" width="24" height="34" rx="4" fill="#ffce3a" ${S_INK}/><rect x="204" y="116" width="36" height="12" rx="3" fill="#2f7d52" ${S_INK}/>
+    <rect x="258" y="106" width="22" height="22" rx="3" fill="#fffdf7" ${S_INK}/>
+    <path d="M310 66v-10a13 13 0 0 1 26 0v10" fill="none" ${S_INK}/><rect x="292" y="66" width="62" height="62" rx="16" fill="#ff7a2b" ${S_INK}/><rect x="304" y="96" width="38" height="24" rx="6" fill="#ffce3a" ${S_INK}/>
+    ${camper(92, "#ffce3a", "#d9a06f", "beanie", "#2b62f6", .9)}${waves(150, 84)}`) },
   daily: { paper: "#ece6dc", art: () => svg("#ff7a2b", `
     <rect x="232" y="24" width="126" height="98" rx="6" fill="#bfe4ff" ${S_INK}/><circle cx="330" cy="58" r="17" fill="#ffce3a" ${S_INK}/><path d="M295 26v94M234 73h122" fill="none" ${S_INK}/>
     <path d="M118 0v22" fill="none" ${S_INK}/><path d="M92 46c0-32 52-32 52 0z" fill="#ffce3a" ${S_INK}/>
@@ -328,8 +407,8 @@ const SCENES = {
     ${bubble(132, 40, "Hi!")}${bubble(278, 42, "Hey!", "#ffce3a")}
     ${camper(104, "#2b62f6", "#f1c6a2", "bucket", "#ff7a2b", .82)}${camper(296, "#ff5c8a", "#a86f46", "hair", "#17130f", .82)}${waves(176, 122)}`) },
 };
-const REPEAT_SCENE = { 일상: "daily", 캠핑: "camp", 편집: "edit", 유튜브: "yt", 여행: "travel" };
-const LISTEN_SCENE = { 뉴스: "news", 연설: "speech", 대화: "talk" };
+const REPEAT_SCENE = { 가족: "family", 리액션: "react", 일상: "daily", 여행: "travel", 캠핑: "camp", 편집: "edit", 유튜브: "yt" };
+const LISTEN_SCENE = { 여행: "travel", 이야기: "story", 장비: "gear", 뉴스: "news", 연설: "speech", 대화: "talk" };
 const STICKER = { listen: "잘 들어 봐요", turn: "이제 따라 해요!" };
 
 function putScene(el, key) {
@@ -392,6 +471,9 @@ async function sweep(len, ms, id, over) {
 let state = { cat: "전체", index: 0, slow: true, veiled: false, mode: "repeat", lCat: "전체", lIndex: 0 };
 try { state = { ...state, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) {}
 if (!CATS.includes(state.cat)) state.cat = "전체";
+// New material sits at the front; send everyone back to item 1 once when it arrives.
+const CONTENT = 2;
+if (state.content !== CONTENT) { state.index = 0; state.lIndex = 0; state.content = CONTENT; }
 
 let run = 0;
 let running = false;
@@ -432,6 +514,7 @@ function render() {
   $("rate").textContent = state.slow ? "속도: 천천히" : "속도: 보통";
   $("veil").textContent = state.veiled ? "뜻 보기" : "뜻 가리기";
   [...$("cats").children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cat === state.cat)));
+  $("cats").querySelector?.('[aria-pressed="true"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   const p = $("play");
   p.textContent = running ? "멈춤" : "시작";
   p.setAttribute("aria-pressed", String(running));
@@ -572,6 +655,93 @@ $("veil").addEventListener("click", () => { state.veiled = !state.veiled; render
 $("ko").addEventListener("click", () => { if (state.veiled) { state.veiled = false; render(); } });
 const n = (en, ko) => ["", en, ko];
 const LISTENS = [
+  { cat: "여행", title: "Boarding Announcement", q: "탑승은 몇 번 게이트에서 하나요?", a: "23번 게이트", lines: [
+    n("Good afternoon, passengers.", "승객 여러분, 안녕하세요."),
+    n("Flight 702 to Vancouver is now boarding.", "밴쿠버행 702편이 지금 탑승을 시작합니다."),
+    n("Please go to gate twenty-three.", "23번 게이트로 가 주십시오."),
+    n("Families with small children may board first.", "어린 자녀를 동반한 가족은 먼저 탑승하실 수 있습니다."),
+    n("Please have your passport and boarding pass ready.", "여권과 탑승권을 준비해 주십시오."),
+  ] },
+  { cat: "여행", title: "Checking In at a Hotel", q: "아침 식사는 어디에서 하나요?", a: "2층", lines: [
+    ["A", "Hi, I'd like to check in. The name is Kim.", "안녕하세요, 체크인하려고요. 김이에요."],
+    ["B", "Welcome. You're staying for two nights, right?", "어서 오세요. 2박 하시는 거죠?"],
+    ["A", "Yes. Is breakfast included?", "네. 아침 식사 포함인가요?"],
+    ["B", "It is. It's served on the second floor from seven.", "네. 7시부터 2층에서 드립니다."],
+    ["A", "Great. And what's the Wi-Fi password?", "좋네요. 와이파이 비밀번호는요?"],
+    ["B", "It's on the back of your room key.", "방 열쇠 뒷면에 있어요."],
+  ] },
+  { cat: "여행", title: "Ordering at a Restaurant", q: "손님은 샐러드에서 무엇을 빼 달라고 했나요?", a: "견과류", lines: [
+    ["B", "Are you ready to order?", "주문하시겠어요?"],
+    ["A", "Yes. I'll have the chicken salad.", "네. 치킨 샐러드 주세요."],
+    ["B", "Would you like anything to drink?", "마실 건 필요하세요?"],
+    ["A", "Just water, please. Does the salad have nuts?", "물만 주세요. 샐러드에 견과류 들어가요?"],
+    ["B", "It does, but we can leave them out.", "들어가는데 빼 드릴 수 있어요."],
+    ["A", "Please do. I'm allergic to nuts.", "그렇게 해 주세요. 견과류 알레르기가 있어요."],
+  ] },
+  { cat: "여행", title: "Asking for Directions", q: "박물관까지 걸어서 얼마나 걸리나요?", a: "10분쯤", lines: [
+    ["A", "Excuse me. How do I get to the museum?", "실례합니다. 박물관에 어떻게 가요?"],
+    ["B", "Go straight for two blocks and turn left.", "두 블록 직진한 다음 왼쪽으로 도세요."],
+    ["A", "Is it far from here?", "여기서 멀어요?"],
+    ["B", "Not really. It's about ten minutes on foot.", "별로요. 걸어서 10분쯤이에요."],
+    ["A", "Thank you so much.", "정말 감사합니다."],
+    ["B", "No problem. Enjoy your visit!", "천만에요. 즐거운 관람 되세요!"],
+  ] },
+  { cat: "이야기", title: "The Brave Little Tent", q: "그날 밤 무엇이 불어왔나요?", a: "강한 바람", lines: [
+    n("There was a little yellow tent.", "작은 노란 텐트가 있었어요."),
+    n("The other tents were big and strong.", "다른 텐트들은 크고 튼튼했어요."),
+    n("One night, a strong wind came.", "어느 날 밤, 강한 바람이 불어왔어요."),
+    n("The big tents shook, but the little tent held on.", "큰 텐트들은 흔들렸지만 작은 텐트는 꽉 버텼어요."),
+    n("By morning, the whole family was sleeping inside it.", "아침이 되자 온 가족이 그 안에서 자고 있었어요."),
+  ] },
+  { cat: "이야기", title: "The Missing Marshmallows", q: "마시멜로를 먹은 건 누구였나요?", a: "너구리", lines: [
+    n("Dad put a bag of marshmallows on the table.", "아빠가 마시멜로 한 봉지를 탁자에 두었어요."),
+    n("When he came back, the bag was gone.", "돌아와 보니 봉지가 없어졌어요."),
+    n("Mom looked at Dad. Dad looked at the kids.", "엄마는 아빠를, 아빠는 아이들을 쳐다봤어요."),
+    n("Then they heard a sound behind the tent.", "그때 텐트 뒤에서 소리가 들렸어요."),
+    n("A raccoon was eating their marshmallows!", "너구리가 마시멜로를 먹고 있었어요!"),
+  ] },
+  { cat: "이야기", title: "Stars Over the Lake", q: "딸은 별을 몇 개까지 셌나요?", a: "100개", lines: [
+    n("After dinner, we lay down by the lake.", "저녁을 먹고 우리는 호숫가에 누웠어요."),
+    n("The sky was full of stars.", "하늘에 별이 가득했어요."),
+    n("My daughter started to count them.", "딸이 별을 세기 시작했어요."),
+    n("She counted to one hundred and fell asleep.", "딸은 백까지 세고 잠들었어요."),
+    n("I carried her to the tent and smiled.", "나는 딸을 텐트로 안고 가며 웃었어요."),
+  ] },
+  { cat: "이야기", title: "The First Fish", q: "잡은 물고기는 어떻게 했나요?", a: "놓아주었어요", lines: [
+    n("Grandpa taught me how to fish.", "할아버지가 낚시하는 법을 가르쳐 주셨어요."),
+    n("I waited for a long time, but nothing happened.", "오래 기다렸지만 아무 일도 없었어요."),
+    n("Suddenly, my line moved.", "갑자기 낚싯줄이 움직였어요."),
+    n("I pulled hard and caught a small silver fish.", "힘껏 당겨서 작은 은빛 물고기를 잡았어요."),
+    n("We took a photo and let it go.", "우리는 사진을 찍고 물고기를 놓아주었어요."),
+  ] },
+  { cat: "장비", title: "A Lantern for Every Trip", q: "한 번 충전하면 몇 시간 쓸 수 있나요?", a: "20시간쯤", lines: [
+    n("This is the lantern I take on every camping trip.", "이건 제가 캠핑 갈 때마다 챙기는 랜턴이에요."),
+    n("It's small, but it's really bright.", "작지만 정말 밝아요."),
+    n("On one charge, it lasts about twenty hours.", "한 번 충전하면 20시간쯤 가요."),
+    n("You can also hang it from the top of your tent.", "텐트 천장에 걸 수도 있어요."),
+    n("The only downside is that it gets a little warm.", "유일한 단점은 조금 따뜻해진다는 거예요."),
+  ] },
+  { cat: "장비", title: "My Folding Chair", q: "의자 무게는 얼마인가요?", a: "1kg쯤", lines: [
+    n("Let me show you my favorite folding chair.", "제가 제일 좋아하는 접이식 의자를 보여 드릴게요."),
+    n("It weighs about one kilogram.", "무게는 1kg쯤이에요."),
+    n("It folds down to the size of a water bottle.", "접으면 물병만 한 크기가 돼요."),
+    n("It takes less than a minute to set up.", "펴는 데 1분도 안 걸려요."),
+    n("It's not cheap, but I use it every weekend.", "싸지는 않지만 주말마다 써요."),
+  ] },
+  { cat: "장비", title: "Camp Stove Tips", q: "바람 부는 날에는 무엇을 쓰라고 했나요?", a: "바람막이", lines: [
+    n("Today I'll share three tips for using a camp stove.", "오늘은 캠핑 버너 쓰는 팁 세 가지를 알려 드릴게요."),
+    n("First, always cook on a flat surface.", "첫째, 항상 평평한 곳에서 요리하세요."),
+    n("Second, use a windscreen on windy days.", "둘째, 바람 부는 날에는 바람막이를 쓰세요."),
+    n("Third, never use a stove inside your tent.", "셋째, 텐트 안에서는 절대 버너를 쓰지 마세요."),
+    n("Stay safe and enjoy your meal.", "안전하게, 맛있게 드세요."),
+  ] },
+  { cat: "장비", title: "Packing Light", q: "배낭 전체 무게는 몇 kg인가요?", a: "8kg", lines: [
+    n("People often ask me what's in my backpack.", "제 배낭에 뭐가 들었는지 자주 물어보세요."),
+    n("The whole bag weighs only eight kilograms.", "가방 전체가 8kg밖에 안 돼요."),
+    n("I bring one pot, one cup, and one spoon.", "냄비 하나, 컵 하나, 숟가락 하나만 가져가요."),
+    n("My sleeping bag is the heaviest thing.", "침낭이 제일 무거워요."),
+    n("Packing light makes the walk much more fun.", "짐을 가볍게 싸면 걷는 게 훨씬 즐거워요."),
+  ] },
   { cat: "뉴스", title: "Rain Closes Campsites", q: "캠핑장은 언제 다시 문을 열까요?", a: "월요일", lines: [
     n("Heavy rain closed three mountain campsites on Friday.", "금요일에 폭우로 산속 캠핑장 세 곳이 문을 닫았습니다."),
     n("Park officials say the roads are not safe right now.", "공원 관계자는 지금 도로가 안전하지 않다고 말합니다."),
@@ -662,7 +832,7 @@ const LISTENS = [
     ["B", "Perfect. See you then.", "좋아. 그때 봐."],
   ] },
 ];
-const LCATS = ["전체", "뉴스", "연설", "대화"];
+const LCATS = ["전체", "여행", "이야기", "장비", "뉴스", "연설", "대화"];
 const LISTEN_IDLE = "시작을 누르면 글자 없이 2번 들려 드려요";
 if (!LCATS.includes(state.lCat)) state.lCat = "전체";
 let revealed = false;
@@ -710,6 +880,7 @@ function renderListen() {
     box.appendChild(b);
   });
   [...$("lcats").children].forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.cat === state.lCat)));
+  $("lcats").querySelector?.('[aria-pressed="true"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
   $("lplay").textContent = running ? "멈춤" : "시작";
   $("lplay").setAttribute("aria-pressed", String(running));
   $("lrate").textContent = state.slow ? "속도: 천천히" : "속도: 보통";
